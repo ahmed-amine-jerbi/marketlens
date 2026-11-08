@@ -585,7 +585,7 @@
       "AssetKey": {
         "pattern": "^[a-z]\u002B:[A-Z0-9][A-Z0-9.\\-]{0,14}$",
         "type": "string",
-        "description": "Stable identifier of an asset across the API, database and clients: the class, a colon and the\r\nsymbol, for example \u0060fiat:EUR\u0060, \u0060crypto:BTC\u0060, \u0060stock:BRK.B\u0060, \u0060etf:SPY\u0060."
+        "description": "Stable identifier of an asset across the API, database and clients: the class, a colon and the\nsymbol, for example \u0060fiat:EUR\u0060, \u0060crypto:BTC\u0060, \u0060stock:BRK.B\u0060, \u0060etf:SPY\u0060."
       },
       "AssetPage": {
         "required": [

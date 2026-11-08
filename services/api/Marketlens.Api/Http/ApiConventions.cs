@@ -73,6 +73,21 @@ public static class ApiConventions
             openApi.AddSchemaTransformer((schema, context, _) =>
             {
                 DescribeAsText(schema, context.JsonTypeInfo.Type);
+
+                // Descriptions come from XML doc comments, whose line breaks follow the build OS; the
+                // committed contract must be the same on every machine.
+                schema.Description = schema.Description?.ReplaceLineEndings("\n");
+                return Task.CompletedTask;
+            });
+            openApi.AddOperationTransformer((operation, _, _) =>
+            {
+                operation.Summary = operation.Summary?.ReplaceLineEndings("\n");
+                operation.Description = operation.Description?.ReplaceLineEndings("\n");
+                foreach (var parameter in operation.Parameters ?? [])
+                {
+                    parameter.Description = parameter.Description?.ReplaceLineEndings("\n");
+                }
+
                 return Task.CompletedTask;
             });
         });
