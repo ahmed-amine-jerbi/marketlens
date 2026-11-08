@@ -55,6 +55,14 @@ public sealed class CandleWriter(AssetCatalog catalog, IServiceScopeFactory scop
         return writtenCount;
     }
 
+    /// <summary>Deletes every candle a source wrote (the sample feed, when real stock data takes over).</summary>
+    public async Task<int> DeleteBySourceAsync(string source, CancellationToken cancellationToken)
+    {
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<MarketlensDbContext>();
+        return await db.PriceCandles.Where(candle => candle.Source == source).ExecuteDeleteAsync(cancellationToken);
+    }
+
     private Task<int> UpsertBatchAsync(MarketlensDbContext db, CandleRow[] batch, CancellationToken cancellationToken)
     {
         var assetIds = batch.Select(row => catalog.TryGet(row.Asset, out var entry) ? entry.Id : Guid.Empty).ToArray();

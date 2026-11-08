@@ -1,3 +1,5 @@
+using System.Net.Http.Headers;
+
 using Marketlens.Api.Data;
 using Marketlens.Api.MarketData;
 
@@ -99,6 +101,27 @@ builder.Services.AddHttpClient<CoinGeckoClient>((services, http) =>
     .UseSocketsHttpHandler((handler, _) => handler.PooledConnectionLifetime = TimeSpan.FromMinutes(15))
     .SetHandlerLifetime(Timeout.InfiniteTimeSpan);
 builder.Services.AddHostedService<CoinGeckoCatalog>();
+
+builder.Services.Configure<TwelveDataOptions>(twelveData =>
+{
+    builder.Configuration.GetSection(TwelveDataOptions.Section).Bind(twelveData);
+    twelveData.ApiKey = builder.Configuration["TWELVEDATA_API_KEY"];
+});
+builder.Services.AddHttpClient<TwelveDataClient>((services, http) =>
+    {
+        var twelveData = services.GetRequiredService<IOptions<TwelveDataOptions>>().Value;
+        http.BaseAddress = twelveData.BaseUrl;
+        http.Timeout = TimeSpan.FromSeconds(60);
+        http.DefaultRequestHeaders.UserAgent.ParseAdd("Marketlens/0.1");
+        if (twelveData.HasApiKey)
+        {
+            http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("apikey", twelveData.ApiKey);
+        }
+    })
+    .UseSocketsHttpHandler((handler, _) => handler.PooledConnectionLifetime = TimeSpan.FromMinutes(15))
+    .SetHandlerLifetime(Timeout.InfiniteTimeSpan);
+builder.Services.AddHostedService<TwelveDataHistoryBackfill>();
+builder.Services.AddHostedService<SampleStockFeed>();
 
 builder.Services.AddHealthChecks();
 
