@@ -33,7 +33,7 @@ export function formatPrice(value: string, language: Language): string {
   return useTypographicMinus(new Intl.NumberFormat(language, options).format(amount));
 }
 
-/** A change in percent with its sign: +1.80 %, \u22120.82 % (spacing per language). Null stays empty. */
+/** A change in percent with its sign and a true minus sign (+1.80 %, -0.82 %; spacing per language). Null stays empty. */
 export function formatChangePct(changePct: string | null, language: Language): string {
   if (changePct === null) {
     return "";

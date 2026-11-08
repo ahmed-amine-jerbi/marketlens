@@ -1,0 +1,131 @@
+{
+  "app": {
+    "name": "Marketlens",
+    "skipToContent": "Skip to content",
+    "notAdvice": "Prices are for information only and are not financial advice."
+  },
+  "nav": {
+    "label": "Main",
+    "home": "Home",
+    "currencies": "Currencies",
+    "crypto": "Crypto",
+    "stocks": "Stocks and ETFs",
+    "convert": "Convert",
+    "dataSources": "Data sources"
+  },
+  "search": {
+    "label": "Search assets",
+    "placeholder": "Search currencies, coins, stocks",
+    "noResults": "Nothing matches “{{query}}”.",
+    "results": "{{count}} results"
+  },
+  "settings": {
+    "open": "Settings",
+    "language": "Language",
+    "displayCurrency": "Show prices in",
+    "theme": "Theme",
+    "themeSystem": "Device setting",
+    "themeLight": "Light",
+    "themeDark": "Dark"
+  },
+  "assetClass": {
+    "fiat": "Currency",
+    "crypto": "Crypto",
+    "stock": "Stock",
+    "etf": "ETF"
+  },
+  "table": {
+    "name": "Name",
+    "price": "Price",
+    "change": "Change",
+    "updated": "Updated"
+  },
+  "change": {
+    "up": "Up {{value}}",
+    "down": "Down {{value}}",
+    "flat": "Unchanged",
+    "rolling24h": "past 24 h",
+    "previousClose": "since previous close"
+  },
+  "freshness": {
+    "live": "Live",
+    "delayed": "Delayed",
+    "daily": "Daily rate",
+    "sample": "Sample data",
+    "updated": "Updated {{age}}",
+    "rateOf": "Rate of {{date}}",
+    "liveWithDailyRate": "Live, with the {{currency}} rate of {{date}}",
+    "sampleHint": "Sample prices: add a Finnhub key to see real stock data."
+  },
+  "watch": {
+    "add": "Watch",
+    "remove": "Watching",
+    "addLabel": "Add {{name}} to your watchlist",
+    "removeLabel": "Remove {{name}} from your watchlist"
+  },
+  "home": {
+    "title": "Markets today",
+    "watchlist": "Your watchlist",
+    "watchlistEmpty": "Add currencies, coins or stocks you want to follow.",
+    "watchlistDevice": "Saved on this device.",
+    "suggestions": "Popular to start with",
+    "moves": "Biggest moves",
+    "movesEmpty": "No prices yet. They appear as soon as the data sources answer."
+  },
+  "markets": {
+    "currenciesTitle": "Currencies",
+    "currenciesIntro": "Daily reference rates from central banks, for {{count}} currencies.",
+    "cryptoTitle": "Crypto",
+    "cryptoIntro": "Live prices for the {{count}} largest coins that trade against the US dollar.",
+    "stocksTitle": "Stocks and ETFs",
+    "stocksIntro": "US stocks and funds that track world indexes.",
+    "filter": "Filter this list"
+  },
+  "asset": {
+    "tracks": "ETF tracking the {{index}}",
+    "notFound": "Marketlens doesn't track “{{key}}”.",
+    "noPriceYet": "No price yet. It appears as soon as the data source answers.",
+    "chartLabel": "{{name}} price over {{range}}",
+    "chartEmpty": "No history for this range yet.",
+    "dailyOnly": "Currencies have one reference rate per day, so short ranges show daily points.",
+    "convert": "Convert {{symbol}}",
+    "ranges": {
+      "1D": "1 day",
+      "1W": "1 week",
+      "1M": "1 month",
+      "3M": "3 months",
+      "1Y": "1 year",
+      "5Y": "5 years"
+    }
+  },
+  "converter": {
+    "title": "Convert",
+    "amount": "Amount",
+    "from": "From",
+    "to": "To",
+    "swap": "Swap",
+    "result": "{{amount}} {{from}} is",
+    "rate": "1 {{from}} = {{rate}} {{to}}",
+    "invalidAmount": "Enter an amount above 0, for example {{example}}.",
+    "unavailable": "There's no price for {{asset}} yet. Try again in a moment.",
+    "sameAsset": "Pick two different assets."
+  },
+  "dataSources": {
+    "title": "Where the data comes from",
+    "intro": "Marketlens collects prices on its own server and shows each one with its source and how current it is. Nothing is computed in your browser.",
+    "fiat": "Daily reference rates published by central banks, through Frankfurter.",
+    "crypto": "Live prices from Binance public market data, priced in USDT. Marketlens counts 1 USDT as 1 US dollar.",
+    "cryptoNames": "Coin logos: data provided by CoinGecko.",
+    "stocks": "US stock and ETF prices from Finnhub, history from Twelve Data. Without API keys the app shows clearly marked sample data instead.",
+    "conversions": "A conversion divides the US-dollar prices of the two assets, so it is only as current as the slower of the two.",
+    "disclaimerTitle": "Not financial advice",
+    "disclaimer": "Marketlens shows prices for information only. They can be delayed or wrong, and nothing here is a recommendation to buy or sell anything."
+  },
+  "errors": {
+    "loadFailed": "This didn't load. Check your connection and try again.",
+    "retry": "Try again",
+    "pageNotFound": "This page doesn't exist.",
+    "backHome": "Back to the home page",
+    "unexpected": "Something broke on this page. Reload to try again."
+  }
+}

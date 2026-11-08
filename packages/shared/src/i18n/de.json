@@ -1,0 +1,131 @@
+{
+  "app": {
+    "name": "Marketlens",
+    "skipToContent": "Zum Inhalt springen",
+    "notAdvice": "Kurse dienen nur zur Information und sind keine Anlageberatung."
+  },
+  "nav": {
+    "label": "Haupt",
+    "home": "Start",
+    "currencies": "Währungen",
+    "crypto": "Krypto",
+    "stocks": "Aktien und ETFs",
+    "convert": "Umrechnen",
+    "dataSources": "Datenquellen"
+  },
+  "search": {
+    "label": "Werte suchen",
+    "placeholder": "Währungen, Coins, Aktien suchen",
+    "noResults": "Keine Treffer für „{{query}}“.",
+    "results": "{{count}} Treffer"
+  },
+  "settings": {
+    "open": "Einstellungen",
+    "language": "Sprache",
+    "displayCurrency": "Preise anzeigen in",
+    "theme": "Design",
+    "themeSystem": "Wie das Gerät",
+    "themeLight": "Hell",
+    "themeDark": "Dunkel"
+  },
+  "assetClass": {
+    "fiat": "Währung",
+    "crypto": "Krypto",
+    "stock": "Aktie",
+    "etf": "ETF"
+  },
+  "table": {
+    "name": "Name",
+    "price": "Preis",
+    "change": "Veränderung",
+    "updated": "Aktualisiert"
+  },
+  "change": {
+    "up": "Plus {{value}}",
+    "down": "Minus {{value}}",
+    "flat": "Unverändert",
+    "rolling24h": "in 24 Std.",
+    "previousClose": "seit dem letzten Schlusskurs"
+  },
+  "freshness": {
+    "live": "Live",
+    "delayed": "Verzögert",
+    "daily": "Tageskurs",
+    "sample": "Beispieldaten",
+    "updated": "Aktualisiert {{age}}",
+    "rateOf": "Kurs vom {{date}}",
+    "liveWithDailyRate": "Live, mit dem {{currency}}-Kurs vom {{date}}",
+    "sampleHint": "Beispielpreise: Mit einem Finnhub-Schlüssel erscheinen echte Börsendaten."
+  },
+  "watch": {
+    "add": "Beobachten",
+    "remove": "Beobachtet",
+    "addLabel": "{{name}} zur Beobachtungsliste hinzufügen",
+    "removeLabel": "{{name}} von der Beobachtungsliste entfernen"
+  },
+  "home": {
+    "title": "Die Märkte heute",
+    "watchlist": "Ihre Beobachtungsliste",
+    "watchlistEmpty": "Fügen Sie Währungen, Coins oder Aktien hinzu, die Sie verfolgen möchten.",
+    "watchlistDevice": "Auf diesem Gerät gespeichert.",
+    "suggestions": "Beliebt zum Einstieg",
+    "moves": "Größte Bewegungen",
+    "movesEmpty": "Noch keine Preise. Sie erscheinen, sobald die Datenquellen antworten."
+  },
+  "markets": {
+    "currenciesTitle": "Währungen",
+    "currenciesIntro": "Tägliche Referenzkurse der Zentralbanken für {{count}} Währungen.",
+    "cryptoTitle": "Krypto",
+    "cryptoIntro": "Live-Preise der {{count}} größten Coins, die gegen den US-Dollar gehandelt werden.",
+    "stocksTitle": "Aktien und ETFs",
+    "stocksIntro": "US-Aktien und Fonds, die Weltindizes abbilden.",
+    "filter": "Diese Liste filtern"
+  },
+  "asset": {
+    "tracks": "ETF auf den {{index}}",
+    "notFound": "Marketlens führt „{{key}}“ nicht.",
+    "noPriceYet": "Noch kein Preis. Er erscheint, sobald die Datenquelle antwortet.",
+    "chartLabel": "Preis von {{name}} über {{range}}",
+    "chartEmpty": "Für diesen Zeitraum gibt es noch keinen Verlauf.",
+    "dailyOnly": "Währungen haben einen Referenzkurs pro Tag, daher zeigen kurze Zeiträume Tagespunkte.",
+    "convert": "{{symbol}} umrechnen",
+    "ranges": {
+      "1D": "1 Tag",
+      "1W": "1 Woche",
+      "1M": "1 Monat",
+      "3M": "3 Monate",
+      "1Y": "1 Jahr",
+      "5Y": "5 Jahre"
+    }
+  },
+  "converter": {
+    "title": "Umrechnen",
+    "amount": "Betrag",
+    "from": "Von",
+    "to": "In",
+    "swap": "Tauschen",
+    "result": "{{amount}} {{from}} sind",
+    "rate": "1 {{from}} = {{rate}} {{to}}",
+    "invalidAmount": "Geben Sie einen Betrag über 0 ein, zum Beispiel {{example}}.",
+    "unavailable": "Für {{asset}} gibt es noch keinen Preis. Versuchen Sie es gleich noch einmal.",
+    "sameAsset": "Wählen Sie zwei verschiedene Werte."
+  },
+  "dataSources": {
+    "title": "Woher die Daten kommen",
+    "intro": "Marketlens sammelt die Preise auf dem eigenen Server und zeigt jeden mit Quelle und Aktualität. In Ihrem Browser wird nichts berechnet.",
+    "fiat": "Tägliche Referenzkurse der Zentralbanken, über Frankfurter.",
+    "crypto": "Live-Preise aus den öffentlichen Marktdaten von Binance, notiert in USDT. Marketlens rechnet 1 USDT als 1 US-Dollar.",
+    "cryptoNames": "Coin-Logos: Daten bereitgestellt von CoinGecko.",
+    "stocks": "Preise für US-Aktien und ETFs von Finnhub, Verlauf von Twelve Data. Ohne API-Schlüssel zeigt die App deutlich gekennzeichnete Beispieldaten.",
+    "conversions": "Eine Umrechnung teilt die Dollarpreise der beiden Werte und ist daher nur so aktuell wie der langsamere der beiden.",
+    "disclaimerTitle": "Keine Anlageberatung",
+    "disclaimer": "Marketlens zeigt Preise nur zur Information. Sie können verzögert oder falsch sein, und nichts hier ist eine Empfehlung zum Kauf oder Verkauf."
+  },
+  "errors": {
+    "loadFailed": "Das hat nicht geladen. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
+    "retry": "Erneut versuchen",
+    "pageNotFound": "Diese Seite gibt es nicht.",
+    "backHome": "Zur Startseite",
+    "unexpected": "Auf dieser Seite ist ein Fehler aufgetreten. Laden Sie sie neu."
+  }
+}

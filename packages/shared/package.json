@@ -8,7 +8,10 @@
   "exports": {
     "./tokens": "./src/tokens.ts",
     "./tokens.css": "./src/tokens.css",
-    "./api": "./src/api/schema.ts"
+    "./api": "./src/api/schema.ts",
+    "./format": "./src/format.ts",
+    "./detectLanguage": "./src/detectLanguage.ts",
+    "./i18n/*": "./src/i18n/*"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
