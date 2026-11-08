@@ -134,6 +134,10 @@ builder.Services.AddHostedService<SampleStockFeed>();
 
 builder.Services.AddSingleton<QuoteReader>();
 builder.Services.AddSingleton<HistoryQuery>();
+builder.Services.AddSingleton<QuoteSubscriptions>();
+builder.Services.Configure<QuoteBroadcastOptions>(builder.Configuration.GetSection(QuoteBroadcastOptions.Section));
+builder.Services.AddHostedService<QuoteBroadcaster>();
+builder.Services.AddSignalR().AddJsonProtocol(json => ApiConventions.ConfigureJson(json.PayloadSerializerOptions));
 builder.Services.AddApiConventions(builder.Configuration);
 builder.Services.AddHealthChecks();
 
@@ -151,5 +155,6 @@ api.MapConversionEndpoints();
 api.MapHistoryEndpoints();
 api.MapStatusEndpoints();
 api.MapLocaleEndpoints();
+app.MapHub<QuotesHub>(QuotesHub.Path);
 
 app.Run();
