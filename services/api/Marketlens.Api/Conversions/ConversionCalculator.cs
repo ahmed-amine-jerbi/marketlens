@@ -47,10 +47,34 @@ public static class ConversionCalculator
         return new Conversion(from.Asset, to.Asset, rate, changePct, asOfUtc, freshness, from, to);
     }
 
-    public static decimal ConvertAmount(decimal amount, Conversion conversion)
+    /// <summary>
+    /// Converts an amount at the conversion's rate. Returns false when the result would not fit a
+    /// decimal (a huge amount of an expensive asset in a currency worth very little).
+    /// </summary>
+    public static bool TryConvertAmount(decimal amount, Conversion conversion, out decimal convertedAmount)
     {
         ArgumentNullException.ThrowIfNull(conversion);
-        return RoundToSignificantDigits(amount * conversion.Rate);
+        try
+        {
+            convertedAmount = RoundToSignificantDigits(amount * conversion.Rate);
+            return true;
+        }
+        catch (OverflowException)
+        {
+            convertedAmount = 0;
+            return false;
+        }
+    }
+
+    /// <summary>How many units of the second asset one unit of the first is worth, from their USD prices.</summary>
+    public static decimal Rate(decimal fromPriceUsd, decimal toPriceUsd)
+    {
+        if (fromPriceUsd <= 0 || toPriceUsd <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(toPriceUsd), "USD prices must be positive.");
+        }
+
+        return Ratio(fromPriceUsd, toPriceUsd);
     }
 
     private static decimal? CalculateChangePct(UsdQuote from, UsdQuote to, decimal rate)

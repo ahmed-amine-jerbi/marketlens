@@ -2,9 +2,12 @@ using System.Net.Http.Headers;
 
 using Marketlens.Api.Conversions;
 using Marketlens.Api.Data;
+using Marketlens.Api.History;
 using Marketlens.Api.Http;
+using Marketlens.Api.Locale;
 using Marketlens.Api.MarketData;
 using Marketlens.Api.Quotes;
+using Marketlens.Api.Status;
 
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
@@ -130,6 +133,7 @@ builder.Services.AddHostedService<TwelveDataHistoryBackfill>();
 builder.Services.AddHostedService<SampleStockFeed>();
 
 builder.Services.AddSingleton<QuoteReader>();
+builder.Services.AddSingleton<HistoryQuery>();
 builder.Services.AddApiConventions(builder.Configuration);
 builder.Services.AddHealthChecks();
 
@@ -144,5 +148,8 @@ var api = app.MapGroup("/api/v1")
     .ProducesProblem(StatusCodes.Status429TooManyRequests);
 api.MapQuoteEndpoints();
 api.MapConversionEndpoints();
+api.MapHistoryEndpoints();
+api.MapStatusEndpoints();
+api.MapLocaleEndpoints();
 
 app.Run();

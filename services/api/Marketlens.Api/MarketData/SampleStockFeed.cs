@@ -86,23 +86,27 @@ public sealed partial class SampleStockFeed(
     private async Task WriteHistoryAsync(IReadOnlyList<CatalogEntry> listings, DateOnly today, CancellationToken cancellationToken)
     {
         var oldestWanted = today.AddDays(-(int)CandleWriter.RetentionWindow(CandleInterval.OneDay).TotalDays);
-        foreach (var listing in listings)
+        var closesByListing = listings.ToDictionary(listing => listing.Key, listing => SampleStockFeed.DailyCloses(listing.Key.Symbol, today));
+
+        // One batched write for every listing: a few seconds instead of fifty round trips.
+        var candles = new List<CandleRow>();
+        foreach (var (asset, closes) in closesByListing)
         {
-            var closes = DailyCloses(listing.Key.Symbol, today);
-            var candles = new List<CandleRow>();
             for (var index = 1; index < closes.Count; index++)
             {
                 if (closes[index].Day >= oldestWanted)
                 {
-                    candles.Add(ToDailyCandle(listing.Key, closes[index], openUsd: closes[index - 1].CloseUsd));
+                    candles.Add(ToDailyCandle(asset, closes[index], openUsd: closes[index - 1].CloseUsd));
                 }
             }
+        }
 
-            await candleWriter.UpsertAsync(candles, cancellationToken);
+        await candleWriter.UpsertAsync(candles, cancellationToken);
 
-            var latest = closes[^1];
-            var previous = closes[^2];
-            quoteBook.Apply(new PriceTick(listing.Key, latest.CloseUsd, previous.CloseUsd, timeProvider.GetUtcNow().UtcDateTime, SourceName, Freshness.Delayed));
+        var nowUtc = timeProvider.GetUtcNow().UtcDateTime;
+        foreach (var (asset, closes) in closesByListing)
+        {
+            quoteBook.Apply(new PriceTick(asset, closes[^1].CloseUsd, closes[^2].CloseUsd, nowUtc, SourceName, Freshness.Delayed));
         }
     }
 

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 using Testcontainers.PostgreSql;
 
@@ -35,6 +36,10 @@ public sealed class MarketlensApiFactory : WebApplicationFactory<Program>, IAsyn
     {
         builder.UseEnvironment("Testing");
         builder.UseSetting("DATABASE_URL", postgres.GetConnectionString());
+
+        // Test hosts need no log output, and the Windows event log provider can be disposed before
+        // hosted services finish stopping, which turns a best-effort shutdown log into a failure.
+        builder.ConfigureLogging(logging => logging.ClearProviders());
         builder.ConfigureTestServices(services =>
         {
             services.AddHttpClient<FrankfurterClient>().ConfigurePrimaryHttpMessageHandler(() => new ProviderFixtures());

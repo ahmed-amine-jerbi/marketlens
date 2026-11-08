@@ -72,7 +72,16 @@ public sealed partial class CandleWriter(
     {
         quoteBook.QuoteUpdated -= Record;
         await base.StopAsync(cancellationToken);
-        await FlushAsync(cancellationToken);
+        try
+        {
+            await FlushAsync(cancellationToken);
+        }
+        // The final flush is best effort: during shutdown the database or the service container may
+        // already be gone; at most the last few seconds of live buckets are lost.
+        catch (Exception error)
+        {
+            LogFlushFailed(logger, error);
+        }
     }
 
     /// <summary>

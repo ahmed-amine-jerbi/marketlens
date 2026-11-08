@@ -28,7 +28,16 @@ public sealed partial class QuoteSnapshots(
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
         await base.StopAsync(cancellationToken);
-        await SaveAsync(cancellationToken);
+        try
+        {
+            await SaveAsync(cancellationToken);
+        }
+        // The final save is best effort: during shutdown the database or the service container may
+        // already be gone, and the next start restores the save from the last minute instead.
+        catch (Exception error)
+        {
+            LogSaveFailed(logger, error);
+        }
     }
 
     public async Task<int> RestoreAsync(CancellationToken cancellationToken)

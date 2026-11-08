@@ -120,13 +120,25 @@ public sealed class ConversionCalculatorTests
     }
 
     [Fact]
-    public void ConvertAmount_multiplies_the_amount_by_the_rate()
+    public void TryConvertAmount_multiplies_the_amount_by_the_rate()
     {
         var conversion = ConversionCalculator.Convert(Bitcoin, TunisianDinar);
 
-        var convertedAmount = ConversionCalculator.ConvertAmount(0.25m, conversion);
+        var isConverted = ConversionCalculator.TryConvertAmount(0.25m, conversion, out var convertedAmount);
 
+        Assert.True(isConverted);
         Assert.Equal(0.25m * conversion.Rate, convertedAmount);
+    }
+
+    [Fact]
+    public void TryConvertAmount_reports_a_result_too_large_for_a_decimal()
+    {
+        var almostWorthless = Quote("fiat:ZZZ", 0.000000000001m, reference: null, Now, Freshness.Daily);
+        var conversion = ConversionCalculator.Convert(Bitcoin, almostWorthless);
+
+        var isConverted = ConversionCalculator.TryConvertAmount(1_000_000_000_000_000m, conversion, out _);
+
+        Assert.False(isConverted);
     }
 
     private static UsdQuote Quote(string key, decimal priceUsd, decimal? reference, DateTime asOfUtc, Freshness freshness) =>

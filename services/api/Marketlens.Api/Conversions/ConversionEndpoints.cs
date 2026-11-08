@@ -66,12 +66,17 @@ public static class ConversionEndpoints
         }
 
         var conversion = ConversionCalculator.Convert(fromLeg, toLeg);
+        if (!ConversionCalculator.TryConvertAmount(amountToConvert, conversion, out var convertedAmount))
+        {
+            return ApiProblems.InvalidParameter("amount", "The converted amount is too large to represent; use a smaller amount.");
+        }
+
         return TypedResults.Ok(new ConversionResponse(
             conversion.From,
             conversion.To,
             conversion.Rate,
             amountToConvert,
-            ConversionCalculator.ConvertAmount(amountToConvert, conversion),
+            convertedAmount,
             conversion.ChangePct,
             conversion.AsOfUtc,
             conversion.Freshness,

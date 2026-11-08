@@ -8,13 +8,15 @@ namespace Marketlens.Api.Tests.MarketData;
 
 public sealed class CandleWriterTests(MarketlensApiFactory factory)
 {
-    // Each test writes its own day so tests sharing the database don't see each other's rows.
+    // Each test writes its own day so tests sharing the database don't see each other's rows; the days
+    // sit two years back, inside the daily retention window, so the background prune leaves them alone.
     private static readonly AssetKey Ether = AssetKey.Parse("crypto:ETH");
+    private static readonly DateTime TwoYearsAgo = DateTime.SpecifyKind(DateTime.UtcNow.Date.AddYears(-2), DateTimeKind.Utc);
 
     [Fact]
     public async Task UpsertAsync_writing_the_same_bucket_twice_keeps_one_row()
     {
-        var bucket = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var bucket = TwoYearsAgo.AddDays(1);
         var row = new CandleRow(Ether, CandleInterval.OneDay, bucket, 130m, 135m, 128m, 132m, 1000m, "binance");
         var writer = factory.Services.GetRequiredService<CandleWriter>();
 
@@ -28,7 +30,7 @@ public sealed class CandleWriterTests(MarketlensApiFactory factory)
     [Fact]
     public async Task UpsertAsync_merges_into_an_existing_bucket()
     {
-        var bucket = new DateTime(2020, 1, 2, 0, 0, 0, DateTimeKind.Utc);
+        var bucket = TwoYearsAgo.AddDays(2);
         var writer = factory.Services.GetRequiredService<CandleWriter>();
         var first = new CandleRow(Ether, CandleInterval.OneDay, bucket, 130m, 135m, 128m, 132m, null, "binance");
         var later = new CandleRow(Ether, CandleInterval.OneDay, bucket, 131m, 140m, 129m, 138.25m, 2500m, "binance");
@@ -47,7 +49,7 @@ public sealed class CandleWriterTests(MarketlensApiFactory factory)
     [Fact]
     public async Task UpsertAsync_skips_assets_that_are_not_in_the_catalogue()
     {
-        var bucket = new DateTime(2020, 1, 3, 0, 0, 0, DateTimeKind.Utc);
+        var bucket = TwoYearsAgo.AddDays(3);
         var writer = factory.Services.GetRequiredService<CandleWriter>();
         var unknown = new CandleRow(AssetKey.Parse("crypto:NOTACOIN"), CandleInterval.OneDay, bucket, 1m, 1m, 1m, 1m, null, "test");
 
