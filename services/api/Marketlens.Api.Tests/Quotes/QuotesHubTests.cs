@@ -20,6 +20,7 @@ public sealed class QuotesHubTests(MarketlensApiFactory factory)
     private static readonly string[] UnknownCoin = ["crypto:NOTACOIN"];
     private static readonly string[] BitcoinCashOnly = ["crypto:BCH"];
     private static readonly string[] BitcoinCashAndUnknown = ["crypto:BCH", "crypto:NOTACOIN"];
+    private static readonly string[] LitecoinTwice = ["crypto:LTC", "crypto:LTC"];
 
     [Fact]
     public async Task Subscribe_answers_with_current_quotes_in_the_display_currency()
@@ -93,6 +94,19 @@ public sealed class QuotesHubTests(MarketlensApiFactory factory)
         await other.InvokeAsync("Unsubscribe", BitcoinCashOnly, TestContext.Current.CancellationToken);
 
         Assert.Contains(bitcoinCashInUsd, subscriptions.Active);
+    }
+
+    [Fact]
+    public async Task Repeating_a_key_in_one_subscribe_counts_one_watcher()
+    {
+        var subscriptions = factory.Services.GetRequiredService<QuoteSubscriptions>();
+        var litecoinInUsd = new QuoteSubscription(AssetKey.Parse("crypto:LTC"), AssetKey.UsDollar);
+        await using var connection = await ConnectAsync();
+
+        await connection.InvokeAsync<List<QuoteResponse>>("Subscribe", LitecoinTwice, null, TestContext.Current.CancellationToken);
+        await connection.InvokeAsync("Unsubscribe", LitecoinTwice, TestContext.Current.CancellationToken);
+
+        Assert.DoesNotContain(litecoinInUsd, subscriptions.Active);
     }
 
     [Fact]

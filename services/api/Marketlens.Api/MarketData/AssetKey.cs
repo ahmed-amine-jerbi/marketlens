@@ -64,7 +64,8 @@ public readonly partial record struct AssetKey(AssetClass Class, string Symbol)
 
     public override string ToString() => $"{ClassName(Class)}:{Symbol}";
 
-    // Symbols are upper-case; stock symbols may contain a dot or dash (BRK.B, BF-B).
-    [GeneratedRegex("^(?<class>[a-z]+):(?<symbol>[A-Z0-9][A-Z0-9.\\-]{0,14})$", RegexOptions.CultureInvariant)]
+    // Symbols are upper-case; stock symbols may contain a dot or dash (BRK.B, BF-B). \z rather than $,
+    // so a trailing newline can't make two different strings parse to the same key.
+    [GeneratedRegex("^(?<class>[a-z]+):(?<symbol>[A-Z0-9][A-Z0-9.\\-]{0,14})\\z", RegexOptions.CultureInvariant)]
     private static partial Regex KeyPattern();
 }

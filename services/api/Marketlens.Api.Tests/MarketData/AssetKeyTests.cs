@@ -32,6 +32,7 @@ public sealed class AssetKeyTests
     [InlineData("crypto:.BTC")]
     [InlineData("stock:ABCDEFGHIJKLMNOP")]
     [InlineData("fiat:EUR ")]
+    [InlineData("crypto:BTC\n")]
     public void TryParse_rejects_text_that_is_not_an_asset_key(string? text)
     {
         var isParsed = AssetKey.TryParse(text, out _);

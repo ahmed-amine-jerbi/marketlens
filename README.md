@@ -7,9 +7,10 @@ converts between any two of them, and charts their history, on the web and on a 
 can show a 1–7 day forecast as a shaded range, together with a measured track record of how often
 past forecasts were right. Forecasts are estimates, not financial advice.
 
-> **Status:** in development. The foundation (repository, toolchains, local database and mail
-> catcher, CI) is in place; market data, the web app, forecasts, accounts, alerts and the mobile
-> app follow in that order. This README is updated as each part lands.
+> **Status:** in development. The API's market data core works today: live prices for 161
+> currencies, 30 coins and 50 stocks and ETFs (sample data until a Finnhub key is set), conversion
+> between any two, chart history and live updates over SignalR. The web app, forecasts, accounts,
+> alerts and the mobile app follow in that order. This README is updated as each part lands.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/preview-asset-dark.svg">
@@ -80,6 +81,19 @@ cd services/forecaster && uv run uvicorn forecaster.app:app --port 8001
 
 No API keys are needed to run it. Copy `.env.example` to `.env` to add provider keys; every
 variable is described there.
+
+Try the API once it's running:
+
+```sh
+curl "localhost:5080/api/v1/conversions?from=crypto:BTC&to=fiat:TND&amount=0.25"
+curl "localhost:5080/api/v1/quotes?keys=crypto:BTC,fiat:EUR,stock:AAPL&in=fiat:EUR"
+curl "localhost:5080/api/v1/assets/crypto:BTC/history?range=1D"
+curl "localhost:5080/api/v1/status"
+```
+
+The full contract is [services/api/openapi/v1.json](services/api/openapi/v1.json) (also served at
+`/openapi/v1.json`); error types are listed in [docs/api/problems.md](docs/api/problems.md), and
+each feature has a walkthrough in [docs/features/](docs/features/README.md).
 
 ## Checks
 

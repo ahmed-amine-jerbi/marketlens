@@ -51,14 +51,16 @@ docs/                         this file, architecture.md, adr/, features/, pipel
 
 ## 5. Features index
 
+Full list with walkthroughs: [features/README.md](features/README.md).
+
 | Feature | Owner | Status | Doc |
 |---|---|---|---|
 | Repository foundation (toolchains, Compose, CI) | root, `services/*`, `packages/shared` | shipped (M1) | — |
-| Market data ingestion | `services/api/Marketlens.Api/MarketData/` | planned (M2) | `features/market-data-ingestion.md` |
-| Live quotes | `Quotes/`, `QuotesHub` | planned (M2) | `features/live-quotes.md` |
-| Currency conversion | `Conversions/` | planned (M2–M3) | `features/currency-conversion.md` |
-| Price history charts | `History/`, web/mobile `PriceChart` | planned (M2–M3) | `features/price-history-charts.md` |
-| Localization | `packages/shared/src/i18n`, `Locale/` | planned (M3) | `features/localization.md` |
+| Market data ingestion | `services/api/Marketlens.Api/MarketData/` | shipped (M2) | [features/market-data-ingestion.md](features/market-data-ingestion.md) |
+| Live quotes | `Quotes/` (REST + SignalR hub) | API shipped (M2); screens M3/M7 | [features/live-quotes.md](features/live-quotes.md) |
+| Currency conversion (reference implementation) | `Conversions/` | API shipped (M2); screens M3/M7 | [features/currency-conversion.md](features/currency-conversion.md) |
+| Price history charts | `History/` | API shipped (M2); charts M3/M7 | [features/price-history-charts.md](features/price-history-charts.md) |
+| Localization | `packages/shared/src/i18n`, `Locale/` | locale suggestion API shipped (M2); UI M3 | `features/localization.md` (M3) |
 | Forecasts | `services/forecaster`, `Forecasts/` | planned (M4) | `features/forecasts.md` |
 | Accounts and sign-in | `Accounts/` | planned (M5) | `features/accounts-and-sign-in.md` |
 | Watchlists | `Watchlists/` | planned (M3, sync M5) | `features/watchlists.md` |
@@ -114,8 +116,10 @@ Visual design section.
 
 ## 9. Environments and config
 
-- **Local:** `docker compose up -d` (PostgreSQL :5432, Mailpit :8025), API `dotnet run` on :5080,
-  forecaster `uv run uvicorn` on :8001. No keys needed.
+- **Local:** `docker compose up -d` (PostgreSQL :5432, Mailpit :8025), API `dotnet run` on :5080
+  (applies migrations, fills fiat and crypto history within minutes, sample stocks immediately;
+  OpenAPI at `/openapi/v1.json`, live hub at `/hubs/quotes`), forecaster `uv run uvicorn` on
+  :8001. No keys needed.
 - **Public demo:** after v1, gated on checking each provider's display terms.
 - **Config:** non-secret defaults in `services/api/Marketlens.Api/appsettings.json`; secrets and
   per-deployment values from environment variables, all listed in [`.env.example`](../.env.example)
@@ -129,18 +133,45 @@ and the plan's Decisions section. Architecture decisions: [adr/](adr/).
 - 2026-11-08 TypeScript pinned to 6.0.3, not 7.0, because typescript-eslint 8.72 supports `<6.1`.
 - 2026-11-08 Light-theme "up" green `#1A7F51` (plan had `#1C8656`, which failed WCAG AA on the
   background).
+- 2026-11-08 D44 build M2 without keys (sample stocks); D45 provider terms recorded, public demo
+  needs its own decision; D46 provider ids as typed columns (Npgsql couldn't read EF Core 10 JSON
+  complex types); D47 GeoLite2 moves to M3.
+- 2026-11-08 Rates and amounts keep 15 significant digits (ratios of USD prices otherwise show
+  rounding residue).
 
 ## 11. Extension recipes
 
-Filled in as the first example of each lands (M2 onward): add an asset, add a provider adapter,
-add an endpoint, add a language, add a table and migration, add a background job.
+- **Add a coin, stock or ETF:** one entry in `services/api/Marketlens.Api/MarketData/assets.json`
+  (ETFs need `tracks`; at most 50 `isStreamed`). Restart.
+- **Add a market data provider:** one adapter emitting `PriceTick` / `CandleRow`, one worker with
+  the standard loop (catch everything except shutdown, `ProviderBackoff`), options + env var in
+  `Program.cs` and `.env.example`, fixtures recorded into `Marketlens.Api.Tests/Fixtures/` and
+  served by `ProviderFixtures`. See [features/market-data-ingestion.md](features/market-data-ingestion.md).
+- **Add an endpoint:** copy the `Conversions` shape: a static `Map…Endpoints` extension in the
+  feature folder, handlers returning `Results<Ok<T>, ProblemHttpResult>` with `.WithSummary`,
+  errors from `ApiProblems`, rules in a pure class with unit tests; map it in `Program.cs` under
+  the `/api/v1` group (rate limited).
+- **Change the API contract:** change the code, run `MARKETLENS_UPDATE_OPENAPI=1 dotnet test` in
+  `services/api` to rewrite `openapi/v1.json`, review the diff, then `npm run generate:api` and
+  `npm run lint:api`. CI fails if either file is stale.
+- **Add a table:** entity + `IEntityTypeConfiguration` in `Data/`, `DbSet` on
+  `MarketlensDbContext`, `dotnet ef migrations add <Name> --project Marketlens.Api --output-dir
+  Data/Migrations`; migrations apply at startup.
+- **Add a background job:** a `BackgroundService` in its feature folder, registered in
+  `Program.cs` after the services it depends on (hosted services start in order); never let an
+  exception escape the loop.
 
 ## 12. Tech debt
 
 - `minimatch` moderate advisory in dev-only lint tooling (via ESLint / typescript-eslint); waiting
   on an upstream release.
+- Finnhub, Twelve Data and CoinGecko fixtures follow documented shapes, not recorded responses;
+  re-record once the P1 keys exist.
+- Live feeds re-send unchanged prices each second (Binance re-reports them); could be trimmed.
 
 ## 13. Open questions
 
-- Provider free-tier limits and display terms to confirm on the providers' own pages (P1, before
-  M2).
+- Public demo: Finnhub and Twelve Data free plans forbid public display / redistribution, Binance
+  forbids commercial relays, and sources disagree on Binance attribution (D45,
+  [provider-terms.md](pipeline/marketlens-v1/raw/provider-terms.md)). Decide before any demo.
+- IP-country lookup (GeoLite2, P4) needs a MaxMind key and account id (D47, M3).

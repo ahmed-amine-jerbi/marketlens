@@ -120,7 +120,7 @@ public sealed class QuotesHub(AssetCatalog catalog, QuoteReader quotes, QuoteSub
 
         // Validate everything before changing anything: this connection's set and the shared watcher
         // counts must move together, or an unsubscribe could later decrement another client's count.
-        var assets = ParseTrackedKeys(keys).ToList();
+        var assets = ParseTrackedKeys(keys);
         var watched = Subscriptions();
         var requested = assets
             .Select(asset => new QuoteSubscription(asset, displayIn))
@@ -156,17 +156,21 @@ public sealed class QuotesHub(AssetCatalog catalog, QuoteReader quotes, QuoteSub
         }
     }
 
-    private IEnumerable<AssetKey> ParseTrackedKeys(string[] keys)
+    /// <summary>Every key parsed and tracked, each asset once, or a <see cref="HubException"/> before anything changes.</summary>
+    private List<AssetKey> ParseTrackedKeys(string[] keys)
     {
-        foreach (var text in keys.Distinct(StringComparer.Ordinal))
+        var assets = new List<AssetKey>();
+        foreach (var text in keys)
         {
             if (!AssetKey.TryParse(text, out var asset) || !catalog.TryGet(asset, out _))
             {
                 throw new HubException($"'{text}' is not a tracked asset key.");
             }
 
-            yield return asset;
+            assets.Add(asset);
         }
+
+        return assets.Distinct().ToList();
     }
 
     private void EnforceSubscribeThrottle()
