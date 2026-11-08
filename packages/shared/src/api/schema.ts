@@ -241,7 +241,7 @@ export interface components {
             trackRecord: null | components["schemas"]["TrackRecordResponse"];
         };
         /** @enum {unknown} */
-        ForecastStatus: "available" | "not-better-than-baseline" | "insufficient-history" | "pending";
+        ForecastStatus: "available" | "insufficient-history" | "pending";
         /**
          * @description How current a price is. Ordered from freshest to slowest.
          * @enum {unknown}
@@ -301,6 +301,7 @@ export interface components {
             stockData: string;
             sources: components["schemas"]["SourceStatus"][];
         };
+        /** @description How the forecasts did: share of real closes inside the 80% range, and errors next to "no change". */
         TrackRecordResponse: {
             source: components["schemas"]["TrackRecordSource"];
             /** Format: int32 */
@@ -311,6 +312,7 @@ export interface components {
             meanErrorPct: string;
             /** Format: decimal */
             baselineErrorPct: string;
+            beatsBaseline: boolean;
         };
         /** @enum {unknown} */
         TrackRecordSource: "backtest" | "live";

@@ -12,11 +12,8 @@ namespace Marketlens.Api.Forecasts;
 
 public enum ForecastStatus
 {
-    /// <summary>The chosen model beat "no change" in the backtest; the points are shown.</summary>
+    /// <summary>A forecast exists; the track record says whether it beat "no change" (D57).</summary>
     Available,
-
-    /// <summary>No model beat "no change", so no range is offered (D29).</summary>
-    NotBetterThanBaseline,
 
     /// <summary>The asset's daily closes don't reach back <see cref="ForecastOptions.HistoryDays"/>.</summary>
     InsufficientHistory,
@@ -28,7 +25,8 @@ public enum ForecastStatus
 /// <summary>One forecast day in the display currency; <c>t</c> is midnight UTC, like history points.</summary>
 public sealed record ForecastPointResponse(DateTime T, decimal Median, decimal Low80, decimal High80, decimal Low95, decimal High95);
 
-public sealed record TrackRecordResponse(TrackRecordSource Source, int WindowWeeks, decimal Coverage80Pct, decimal MeanErrorPct, decimal BaselineErrorPct);
+/// <summary>How the forecasts did: share of real closes inside the 80% range, and errors next to "no change".</summary>
+public sealed record TrackRecordResponse(TrackRecordSource Source, int WindowWeeks, decimal Coverage80Pct, decimal MeanErrorPct, decimal BaselineErrorPct, bool BeatsBaseline);
 
 public sealed record ForecastResponse(
     ForecastStatus Status,
@@ -41,8 +39,8 @@ public sealed record ForecastResponse(
 
 /// <summary>
 /// <c>GET /api/v1/assets/{key}/forecast</c>: the asset's latest forecast, shown in the display currency
-/// at that currency's latest price (D51), with its track record. Points come only with
-/// <see cref="ForecastStatus.Available"/>.
+/// at that currency's latest price (D51), with its track record. The range is shown whether or not it
+/// beat "no change"; the track record says which (D57).
 /// </summary>
 public static class ForecastEndpoints
 {
@@ -59,8 +57,7 @@ public static class ForecastEndpoints
     {
         null when hasEnoughHistory => ForecastStatus.Pending,
         null => ForecastStatus.InsufficientHistory,
-        { Backtest.BeatsBaseline: true } => ForecastStatus.Available,
-        _ => ForecastStatus.NotBetterThanBaseline,
+        _ => ForecastStatus.Available,
     };
 
     private static async Task<Results<Ok<ForecastResponse>, ProblemHttpResult>> GetForecast(
@@ -107,9 +104,7 @@ public static class ForecastEndpoints
         }
 
         var trackRecord = await evaluator.ReadLiveTrackRecordAsync(listing.Id, cancellationToken) ?? BacktestRecord(latest.Backtest);
-        var points = status == ForecastStatus.Available
-            ? latest.Points.OrderBy(point => point.Date).Select(point => InDisplayCurrency(point, displayQuote.PriceUsd)).ToList()
-            : [];
+        var points = latest.Points.OrderBy(point => point.Date).Select(point => InDisplayCurrency(point, displayQuote.PriceUsd)).ToList();
 
         return TypedResults.Ok(new ForecastResponse(
             status,
@@ -118,11 +113,11 @@ public static class ForecastEndpoints
             DateTime.SpecifyKind(latest.CreatedAtUtc, DateTimeKind.Utc),
             latest.HorizonDays,
             points,
-            new TrackRecordResponse(trackRecord.Source, trackRecord.WindowWeeks, trackRecord.Coverage80Pct, trackRecord.MeanErrorPct, trackRecord.BaselineErrorPct)));
+            new TrackRecordResponse(trackRecord.Source, trackRecord.WindowWeeks, trackRecord.Coverage80Pct, trackRecord.MeanErrorPct, trackRecord.BaselineErrorPct, trackRecord.BeatsBaseline)));
     }
 
     private static TrackRecord BacktestRecord(ForecastBacktest backtest) =>
-        new(TrackRecordSource.Backtest, backtest.WindowWeeks, backtest.Coverage80Pct, backtest.MeanErrorPct, backtest.BaselineErrorPct);
+        new(TrackRecordSource.Backtest, backtest.WindowWeeks, backtest.Coverage80Pct, backtest.MeanErrorPct, backtest.BaselineErrorPct, backtest.BeatsBaseline);
 
     private static ForecastPointResponse InDisplayCurrency(ForecastPoint point, decimal displayPriceUsd) => new(
         point.Date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),

@@ -921,7 +921,6 @@
       "ForecastStatus": {
         "enum": [
           "available",
-          "not-better-than-baseline",
           "insufficient-history",
           "pending"
         ]
@@ -1142,7 +1141,8 @@
           "windowWeeks",
           "coverage80Pct",
           "meanErrorPct",
-          "baselineErrorPct"
+          "baselineErrorPct",
+          "beatsBaseline"
         ],
         "type": "object",
         "properties": {
@@ -1171,8 +1171,12 @@
             "pattern": "^-?[0-9]\u002B(\\.[0-9]\u002B)?$",
             "type": "string",
             "format": "decimal"
+          },
+          "beatsBaseline": {
+            "type": "boolean"
           }
-        }
+        },
+        "description": "How the forecasts did: share of real closes inside the 80% range, and errors next to \u0022no change\u0022."
       },
       "TrackRecordSource": {
         "enum": [

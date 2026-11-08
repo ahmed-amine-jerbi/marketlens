@@ -39,12 +39,12 @@ public sealed class ForecastSchedulerTests(MarketlensApiFactory factory)
     }
 
     [Fact]
-    public void Status_says_pending_or_insufficient_without_a_forecast_and_follows_the_backtest_with_one()
+    public void Status_says_pending_or_insufficient_without_a_forecast_and_available_with_one_whatever_its_backtest()
     {
         Assert.Equal(ForecastStatus.Pending, ForecastEndpoints.StatusOf(null, hasEnoughHistory: true));
         Assert.Equal(ForecastStatus.InsufficientHistory, ForecastEndpoints.StatusOf(null, hasEnoughHistory: false));
         Assert.Equal(ForecastStatus.Available, ForecastEndpoints.StatusOf(StoredForecast(beatsBaseline: true), hasEnoughHistory: true));
-        Assert.Equal(ForecastStatus.NotBetterThanBaseline, ForecastEndpoints.StatusOf(StoredForecast(beatsBaseline: false), hasEnoughHistory: true));
+        Assert.Equal(ForecastStatus.Available, ForecastEndpoints.StatusOf(StoredForecast(beatsBaseline: false), hasEnoughHistory: true));
     }
 
     [Fact]
@@ -84,6 +84,7 @@ public sealed class ForecastSchedulerTests(MarketlensApiFactory factory)
         Assert.Equal("backtest", trackRecord.GetProperty("source").GetString());
         Assert.Equal(8, trackRecord.GetProperty("windowWeeks").GetInt32());
         Assert.Equal("81.25", trackRecord.GetProperty("coverage80Pct").GetString());
+        Assert.True(trackRecord.GetProperty("beatsBaseline").GetBoolean());
     }
 
     [Fact]
@@ -104,15 +105,17 @@ public sealed class ForecastSchedulerTests(MarketlensApiFactory factory)
     }
 
     [Fact]
-    public async Task An_asset_no_model_beats_gets_no_range_but_keeps_its_record()
+    public async Task An_asset_no_model_beats_still_gets_its_range_and_a_record_that_says_so()
     {
         using var client = factory.CreateClient();
 
-        var forecast = await EventuallyJsonAsync(client, $"/api/v1/assets/{ForecasterStub.NotBetterAsset}/forecast", answer => answer.GetProperty("status").GetString() != "pending");
+        var forecast = await EventuallyAvailableAsync(client, $"/api/v1/assets/{ForecasterStub.NotBetterAsset}/forecast");
 
-        Assert.Equal("not-better-than-baseline", forecast.GetProperty("status").GetString());
-        Assert.Equal(0, forecast.GetProperty("points").GetArrayLength());
-        Assert.Equal("2", forecast.GetProperty("trackRecord").GetProperty("baselineErrorPct").GetString());
+        Assert.Equal("Naive", forecast.GetProperty("model").GetString());
+        Assert.Equal(5, forecast.GetProperty("points").GetArrayLength());
+        var trackRecord = forecast.GetProperty("trackRecord");
+        Assert.False(trackRecord.GetProperty("beatsBaseline").GetBoolean());
+        Assert.Equal("2", trackRecord.GetProperty("baselineErrorPct").GetString());
     }
 
     [Fact]
@@ -154,7 +157,8 @@ public sealed class ForecastSchedulerTests(MarketlensApiFactory factory)
         await EventuallyAvailableAsync(client, $"/api/v1/assets/{nvidia}/forecast");
         var pastCloses = await ReadRecentClosesAsync(nvidia, count: 21);
 
-        // 15 days inside their 80% range, 6 outside: 71.4286% coverage.
+        // 15 days on the median and inside the range, 6 at 2.5 times the close and outside it:
+        // 71.4286% coverage, mean error (6 × 150%) / 21 = 42.8571%, far worse than no change.
         await StorePastForecastAsync(nvidia, pastCloses.Select((close, index) => index < 15
             ? Point(close.Date, median: close.CloseUsd, low80: close.CloseUsd * 0.5m, high80: close.CloseUsd * 2m)
             : Point(close.Date, median: close.CloseUsd * 2.5m, low80: close.CloseUsd * 2m, high80: close.CloseUsd * 3m)));
@@ -166,6 +170,8 @@ public sealed class ForecastSchedulerTests(MarketlensApiFactory factory)
         var trackRecord = forecast.GetProperty("trackRecord");
         Assert.Equal("live", trackRecord.GetProperty("source").GetString());
         Assert.Equal("71.4286", trackRecord.GetProperty("coverage80Pct").GetString());
+        Assert.Equal("42.8571", trackRecord.GetProperty("meanErrorPct").GetString());
+        Assert.False(trackRecord.GetProperty("beatsBaseline").GetBoolean());
         Assert.Equal(0, await factory.Services.GetRequiredService<ForecastEvaluator>().EvaluateDueAsync(TestContext.Current.CancellationToken));
     }
 

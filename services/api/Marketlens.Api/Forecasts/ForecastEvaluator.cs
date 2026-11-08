@@ -14,7 +14,8 @@ public enum TrackRecordSource
     Live,
 }
 
-public sealed record TrackRecord(TrackRecordSource Source, int WindowWeeks, decimal Coverage80Pct, decimal MeanErrorPct, decimal BaselineErrorPct);
+/// <summary>A track record; <see cref="BeatsBaseline"/> is true when the forecasts' error is below "no change"'s.</summary>
+public sealed record TrackRecord(TrackRecordSource Source, int WindowWeeks, decimal Coverage80Pct, decimal MeanErrorPct, decimal BaselineErrorPct, bool BeatsBaseline);
 
 /// <summary>
 /// Keeps the live track record: compares each stored forecast day, once its close exists, with what
@@ -96,12 +97,15 @@ public sealed class ForecastEvaluator(IServiceScopeFactory scopeFactory, IOption
             return null;
         }
 
+        var meanErrorPct = Math.Round(summary.MeanErrorPct, PercentDecimals);
+        var baselineErrorPct = Math.Round(summary.BaselineErrorPct, PercentDecimals);
         return new TrackRecord(
             TrackRecordSource.Live,
             options.Value.BacktestWeeks,
             Math.Round(100m * summary.InsideCount / summary.Count, PercentDecimals),
-            Math.Round(summary.MeanErrorPct, PercentDecimals),
-            Math.Round(summary.BaselineErrorPct, PercentDecimals));
+            meanErrorPct,
+            baselineErrorPct,
+            BeatsBaseline: meanErrorPct < baselineErrorPct);
     }
 
     /// <summary>Deletes forecasts older than the retention period; their points and evaluations go with them.</summary>
