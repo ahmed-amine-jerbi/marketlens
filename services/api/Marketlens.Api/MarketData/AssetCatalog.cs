@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Marketlens.Api.MarketData;
 
 /// <summary>An active asset as the rest of the API sees it.</summary>
-public sealed record CatalogEntry(Guid Id, AssetKey Key, string Name, string? Tracks, ProviderRefs ProviderRefs);
+public sealed record CatalogEntry(Guid Id, AssetKey Key, string Name, string? Tracks, string? LogoUrl, ProviderRefs ProviderRefs);
 
 /// <summary>A fiat currency as a provider lists it, before it enters the catalogue.</summary>
 public sealed record FiatCurrency(string Code, string Name);
@@ -46,6 +46,32 @@ public sealed partial class AssetCatalog(
 
     public Task SyncFiatAsync(IEnumerable<FiatCurrency> currencies, CancellationToken cancellationToken) =>
         SyncAsync(FiatClass, currencies.Select(currency => NewAsset(AssetClass.Fiat, currency.Code, currency.Name, tracks: null, new ProviderRefs())), cancellationToken);
+
+    /// <summary>Stores logo URLs for the given assets and leaves the rest untouched.</summary>
+    public async Task UpdateLogosAsync(IReadOnlyDictionary<AssetKey, string> logoByAsset, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(logoByAsset);
+
+        await writeLock.WaitAsync(cancellationToken);
+        try
+        {
+            await using var scope = scopeFactory.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<MarketlensDbContext>();
+            var keys = logoByAsset.Keys.Select(key => key.ToString()).ToList();
+
+            foreach (var asset in await db.Assets.Where(asset => keys.Contains(asset.Key)).ToListAsync(cancellationToken))
+            {
+                asset.LogoUrl = logoByAsset[AssetKey.Parse(asset.Key)];
+            }
+
+            await db.SaveChangesAsync(cancellationToken);
+            await ReloadAsync(db, cancellationToken);
+        }
+        finally
+        {
+            writeLock.Release();
+        }
+    }
 
     private async Task SyncAsync(AssetClass[] ownedClasses, IEnumerable<Asset> listedAssets, CancellationToken cancellationToken)
     {
@@ -110,7 +136,7 @@ public sealed partial class AssetCatalog(
     {
         var active = await db.Assets.AsNoTracking().Where(asset => asset.IsActive).ToListAsync(cancellationToken);
         activeAssets = active
-            .Select(asset => new CatalogEntry(asset.Id, AssetKey.Parse(asset.Key), asset.Name, asset.Tracks, asset.ProviderRefs))
+            .Select(asset => new CatalogEntry(asset.Id, AssetKey.Parse(asset.Key), asset.Name, asset.Tracks, asset.LogoUrl, asset.ProviderRefs))
             .ToFrozenDictionary(entry => entry.Key);
     }
 

@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 using Marketlens.Api.Data;
 
 using Microsoft.EntityFrameworkCore;
@@ -57,7 +55,9 @@ public sealed partial class FiatRatesWorker(
                 backoff.Reset();
                 delay = options.Value.PollInterval;
             }
-            catch (Exception error) when (error is HttpRequestException or JsonException && !stoppingToken.IsCancellationRequested)
+            // Any provider failure, including an unexpected response shape, is logged and retried:
+            // an exception escaping a background service would stop the whole API.
+            catch (Exception error) when (!stoppingToken.IsCancellationRequested)
             {
                 delay = backoff.NextDelay();
                 LogRefreshFailed(logger, error, delay);

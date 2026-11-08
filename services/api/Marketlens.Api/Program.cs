@@ -59,6 +59,47 @@ builder.Services.AddHttpClient<BinanceMarketDataClient>((services, http) =>
 builder.Services.AddHostedService<BinanceKlinesBackfill>();
 builder.Services.AddHostedService<BinanceLiveFeed>();
 
+builder.Services.Configure<FinnhubOptions>(finnhub =>
+{
+    builder.Configuration.GetSection(FinnhubOptions.Section).Bind(finnhub);
+    finnhub.ApiKey = builder.Configuration["FINNHUB_API_KEY"];
+});
+builder.Services.AddHttpClient<FinnhubClient>((services, http) =>
+    {
+        var finnhub = services.GetRequiredService<IOptions<FinnhubOptions>>().Value;
+        http.BaseAddress = finnhub.BaseUrl;
+        http.Timeout = TimeSpan.FromSeconds(30);
+        http.DefaultRequestHeaders.UserAgent.ParseAdd("Marketlens/0.1");
+        if (finnhub.HasApiKey)
+        {
+            http.DefaultRequestHeaders.Add(FinnhubClient.ApiKeyHeader, finnhub.ApiKey);
+        }
+    })
+    .UseSocketsHttpHandler((handler, _) => handler.PooledConnectionLifetime = TimeSpan.FromMinutes(15))
+    .SetHandlerLifetime(Timeout.InfiniteTimeSpan);
+builder.Services.AddHostedService<FinnhubLiveFeed>();
+builder.Services.AddHostedService<FinnhubQuotePoller>();
+
+builder.Services.Configure<CoinGeckoOptions>(coinGecko =>
+{
+    builder.Configuration.GetSection(CoinGeckoOptions.Section).Bind(coinGecko);
+    coinGecko.ApiKey = builder.Configuration["COINGECKO_DEMO_API_KEY"];
+});
+builder.Services.AddHttpClient<CoinGeckoClient>((services, http) =>
+    {
+        var coinGecko = services.GetRequiredService<IOptions<CoinGeckoOptions>>().Value;
+        http.BaseAddress = coinGecko.BaseUrl;
+        http.Timeout = TimeSpan.FromSeconds(30);
+        http.DefaultRequestHeaders.UserAgent.ParseAdd("Marketlens/0.1");
+        if (coinGecko.HasApiKey)
+        {
+            http.DefaultRequestHeaders.Add(CoinGeckoClient.ApiKeyHeader, coinGecko.ApiKey);
+        }
+    })
+    .UseSocketsHttpHandler((handler, _) => handler.PooledConnectionLifetime = TimeSpan.FromMinutes(15))
+    .SetHandlerLifetime(Timeout.InfiniteTimeSpan);
+builder.Services.AddHostedService<CoinGeckoCatalog>();
+
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();

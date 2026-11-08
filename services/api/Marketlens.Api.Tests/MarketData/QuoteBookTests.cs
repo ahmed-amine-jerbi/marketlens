@@ -76,6 +76,30 @@ public sealed class QuoteBookTests
     }
 
     [Fact]
+    public void Apply_keeps_the_known_reference_when_a_trade_brings_none()
+    {
+        quoteBook.Apply(Tick(76036.00m, Now));
+
+        quoteBook.Apply(new PriceTick(Bitcoin, 76050.00m, ReferencePriceUsd: null, Now.AddSeconds(1), "binance", Freshness.Live));
+
+        Assert.True(quoteBook.TryGet(Bitcoin, out var quote));
+        Assert.Equal(76050.00m, quote.PriceUsd);
+        Assert.Equal(75873.47m, quote.ReferencePriceUsd);
+    }
+
+    [Fact]
+    public void SetReferencePrice_replaces_the_reference_without_touching_the_price()
+    {
+        quoteBook.Apply(Tick(76036.00m, Now));
+
+        quoteBook.SetReferencePrice(Bitcoin, 74000.00m);
+
+        Assert.True(quoteBook.TryGet(Bitcoin, out var quote));
+        Assert.Equal(76036.00m, quote.PriceUsd);
+        Assert.Equal(74000.00m, quote.ReferencePriceUsd);
+    }
+
+    [Fact]
     public void TryGet_returns_false_for_an_asset_without_a_price()
     {
         Assert.False(quoteBook.TryGet(AssetKey.Parse("fiat:TND"), out _));

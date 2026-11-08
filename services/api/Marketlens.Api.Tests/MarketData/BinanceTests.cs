@@ -51,6 +51,9 @@ public sealed class BinanceTests : IDisposable
     [InlineData("""{"stream":"btcusdt@miniTicker","data":{"e":"24hrMiniTicker","E":1,"s":"BTCUSDT","c":"not a number","o":"1"}}""")]
     [InlineData("""{"stream":"btcusdt@miniTicker","data":{"e":"24hrMiniTicker","E":1,"s":"BTCUSDT","c":"0","o":"1"}}""")]
     [InlineData("""not json""")]
+    [InlineData("""{"stream":"btcusdt@miniTicker","data":{"e":"24hrMiniTicker","E":"later","s":"BTCUSDT","c":"1","o":"1"}}""")]
+    [InlineData("""{"stream":"btcusdt@miniTicker","data":{"e":"24hrMiniTicker","E":1,"s":"BTCUSDT","c":1.5,"o":"1"}}""")]
+    [InlineData("""{"stream":"btcusdt@miniTicker","data":[1,2]}""")]
     public void ParseFrame_ignores_frames_that_are_not_a_valid_ticker_for_a_listed_coin(string frame)
     {
         var tick = BinanceLiveFeed.ParseFrame(Encoding.UTF8.GetBytes(frame), ListedCoins);

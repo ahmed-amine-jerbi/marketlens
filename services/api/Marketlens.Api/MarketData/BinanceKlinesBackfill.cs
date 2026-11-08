@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 using Marketlens.Api.Data;
 
 using Microsoft.EntityFrameworkCore;
@@ -36,7 +34,9 @@ public sealed partial class BinanceKlinesBackfill(
                 backoff.Reset();
                 delay = options.Value.GapFillInterval;
             }
-            catch (Exception error) when (error is HttpRequestException or JsonException && !stoppingToken.IsCancellationRequested)
+            // Any provider failure, including an unexpected response shape, is logged and retried:
+            // an exception escaping a background service would stop the whole API.
+            catch (Exception error) when (!stoppingToken.IsCancellationRequested)
             {
                 delay = backoff.NextDelay((error as ProviderRateLimitedException)?.RetryAfter);
                 LogBackfillFailed(logger, error, delay);

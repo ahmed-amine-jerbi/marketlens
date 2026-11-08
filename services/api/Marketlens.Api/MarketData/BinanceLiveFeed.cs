@@ -47,12 +47,16 @@ public sealed partial class BinanceLiveFeed(
         using (frame)
         {
             if (!frame.RootElement.TryGetProperty("data", out var ticker)
+                || ticker.ValueKind != JsonValueKind.Object
                 || !ticker.TryGetProperty("s", out var symbol)
+                || symbol.ValueKind != JsonValueKind.String
                 || symbol.GetString() is not { } binanceSymbol
                 || !assetByBinanceSymbol.TryGetValue(binanceSymbol, out var asset)
                 || !TryReadDecimal(ticker, "c", out var lastPrice)
                 || !TryReadDecimal(ticker, "o", out var priceDayAgo)
                 || !ticker.TryGetProperty("E", out var eventTime)
+                || eventTime.ValueKind != JsonValueKind.Number
+                || !eventTime.TryGetInt64(out var eventTimeMs)
                 || lastPrice <= 0)
             {
                 return null;
@@ -62,7 +66,7 @@ public sealed partial class BinanceLiveFeed(
                 asset,
                 lastPrice,
                 priceDayAgo > 0 ? priceDayAgo : null,
-                DateTime.UnixEpoch.AddMilliseconds(eventTime.GetInt64()),
+                DateTime.UnixEpoch.AddMilliseconds(eventTimeMs),
                 BinanceMarketDataClient.SourceName,
                 Freshness.Live);
         }
@@ -76,7 +80,9 @@ public sealed partial class BinanceLiveFeed(
             {
                 await StreamAsync(stoppingToken);
             }
-            catch (Exception error) when (error is WebSocketException or IOException && !stoppingToken.IsCancellationRequested)
+            // Any provider failure, including an unexpected response shape, is logged and retried:
+            // an exception escaping a background service would stop the whole API.
+            catch (Exception error) when (!stoppingToken.IsCancellationRequested)
             {
                 LogStreamFailed(logger, error);
             }
@@ -136,6 +142,7 @@ public sealed partial class BinanceLiveFeed(
     {
         value = 0;
         return ticker.TryGetProperty(property, out var field)
+            && field.ValueKind == JsonValueKind.String
             && field.GetString() is { } text
             && decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out value);
     }

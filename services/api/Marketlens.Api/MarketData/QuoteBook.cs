@@ -24,7 +24,8 @@ public sealed class QuoteBook(TimeProvider timeProvider)
 
     /// <summary>
     /// Records a tick if it is newer than what the book holds. Returns false for an older or
-    /// out-of-order tick, which leaves the book unchanged.
+    /// out-of-order tick, which leaves the book unchanged. A tick without a reference price (a single
+    /// trade) keeps the reference the book already has.
     /// </summary>
     public bool Apply(PriceTick tick)
     {
@@ -57,9 +58,31 @@ public sealed class QuoteBook(TimeProvider timeProvider)
                 return false;
             }
 
-            if (latestQuotes.TryUpdate(tick.Asset, incoming, current))
+            var merged = incoming with { ReferencePriceUsd = incoming.ReferencePriceUsd ?? current.ReferencePriceUsd };
+            if (latestQuotes.TryUpdate(tick.Asset, merged, current))
             {
                 return true;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Sets the price an asset's change is measured against (a new previous close), whatever the age
+    /// of the quote that reported it. Ignored for an asset without a price yet.
+    /// </summary>
+    public void SetReferencePrice(AssetKey asset, decimal referencePriceUsd)
+    {
+        if (referencePriceUsd <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(referencePriceUsd), referencePriceUsd, $"Reference price for {asset} must be positive.");
+        }
+
+        while (latestQuotes.TryGetValue(asset, out var current))
+        {
+            if (current.ReferencePriceUsd == referencePriceUsd
+                || latestQuotes.TryUpdate(asset, current with { ReferencePriceUsd = referencePriceUsd }, current))
+            {
+                return;
             }
         }
     }
