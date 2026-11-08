@@ -1,3 +1,5 @@
+using Marketlens.Api.MarketData;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -19,6 +21,8 @@ public sealed class QuoteSnapshot
     public required DateTime AsOfUtc { get; set; }
 
     public required string Source { get; set; }
+
+    public required Freshness Freshness { get; set; }
 }
 
 internal sealed class QuoteSnapshotConfiguration : IEntityTypeConfiguration<QuoteSnapshot>
@@ -32,5 +36,8 @@ internal sealed class QuoteSnapshotConfiguration : IEntityTypeConfiguration<Quot
         builder.Property(snapshot => snapshot.PriceUsd).HasPrecision(38, 18);
         builder.Property(snapshot => snapshot.ReferencePriceUsd).HasPrecision(38, 18);
         builder.Property(snapshot => snapshot.Source).HasMaxLength(32);
+        builder.Property(snapshot => snapshot.Freshness)
+            .HasConversion(freshness => freshness.ToString().ToLowerInvariant(), name => Enum.Parse<Freshness>(name, ignoreCase: true))
+            .HasMaxLength(8);
     }
 }

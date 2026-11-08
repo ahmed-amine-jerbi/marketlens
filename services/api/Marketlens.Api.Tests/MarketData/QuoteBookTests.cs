@@ -100,6 +100,39 @@ public sealed class QuoteBookTests
     }
 
     [Fact]
+    public void Apply_announces_accepted_ticks_and_stays_quiet_about_ignored_ones()
+    {
+        var announced = new List<UsdQuote>();
+        quoteBook.QuoteUpdated += announced.Add;
+
+        quoteBook.Apply(Tick(76036.00m, Now.AddSeconds(1)));
+        quoteBook.Apply(Tick(76000.00m, Now));
+
+        Assert.Equal(76036.00m, Assert.Single(announced).PriceUsd);
+    }
+
+    [Fact]
+    public void Restore_brings_back_saved_quotes_silently_without_overriding_newer_prices()
+    {
+        var announced = new List<UsdQuote>();
+        quoteBook.Apply(Tick(76040.12m, Now));
+        quoteBook.QuoteUpdated += announced.Add;
+        var tunisianDinar = AssetKey.Parse("fiat:TND");
+
+        quoteBook.Restore(
+        [
+            new UsdQuote(Bitcoin, 70000m, null, Now.AddHours(-1), "binance", Freshness.Live),
+            new UsdQuote(tunisianDinar, 0.334m, 0.333m, Now.AddDays(-1), "frankfurter", Freshness.Daily),
+        ]);
+
+        Assert.Empty(announced);
+        Assert.True(quoteBook.TryGet(Bitcoin, out var bitcoin));
+        Assert.Equal(76040.12m, bitcoin.PriceUsd);
+        Assert.True(quoteBook.TryGet(tunisianDinar, out var dinar));
+        Assert.Equal(0.334m, dinar.PriceUsd);
+    }
+
+    [Fact]
     public void TryGet_returns_false_for_an_asset_without_a_price()
     {
         Assert.False(quoteBook.TryGet(AssetKey.Parse("fiat:TND"), out _));

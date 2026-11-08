@@ -23,7 +23,10 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<QuoteBook>();
 builder.Services.AddSingleton<AssetCatalog>();
 builder.Services.AddHostedService(services => services.GetRequiredService<AssetCatalog>());
+builder.Services.AddSingleton<QuoteSnapshots>();
+builder.Services.AddHostedService(services => services.GetRequiredService<QuoteSnapshots>());
 builder.Services.AddSingleton<CandleWriter>();
+builder.Services.AddHostedService(services => services.GetRequiredService<CandleWriter>());
 
 builder.Services.Configure<FrankfurterOptions>(builder.Configuration.GetSection(FrankfurterOptions.Section));
 builder.Services.AddHttpClient<FrankfurterClient>((services, http) =>

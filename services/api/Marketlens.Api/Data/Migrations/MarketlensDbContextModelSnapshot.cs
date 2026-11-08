@@ -168,6 +168,12 @@ namespace Marketlens.Api.Data.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("as_of_utc");
 
+                    b.Property<string>("Freshness")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)")
+                        .HasColumnName("freshness");
+
                     b.Property<decimal>("PriceUsd")
                         .HasPrecision(38, 18)
                         .HasColumnType("numeric(38,18)")

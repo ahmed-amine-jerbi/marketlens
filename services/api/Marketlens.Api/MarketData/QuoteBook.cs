@@ -23,6 +23,12 @@ public sealed class QuoteBook(TimeProvider timeProvider)
     private readonly ConcurrentDictionary<AssetKey, UsdQuote> latestQuotes = new();
 
     /// <summary>
+    /// Raised after every accepted tick, on the ingesting thread. Handlers must be quick and must not
+    /// throw: they run inside a provider's receive loop.
+    /// </summary>
+    public event Action<UsdQuote>? QuoteUpdated;
+
+    /// <summary>
     /// Records a tick if it is newer than what the book holds. Returns false for an older or
     /// out-of-order tick, which leaves the book unchanged. A tick without a reference price (a single
     /// trade) keeps the reference the book already has.
@@ -47,6 +53,7 @@ public sealed class QuoteBook(TimeProvider timeProvider)
             {
                 if (latestQuotes.TryAdd(tick.Asset, incoming))
                 {
+                    QuoteUpdated?.Invoke(incoming);
                     return true;
                 }
 
@@ -61,6 +68,7 @@ public sealed class QuoteBook(TimeProvider timeProvider)
             var merged = incoming with { ReferencePriceUsd = incoming.ReferencePriceUsd ?? current.ReferencePriceUsd };
             if (latestQuotes.TryUpdate(tick.Asset, merged, current))
             {
+                QuoteUpdated?.Invoke(merged);
                 return true;
             }
         }
@@ -99,4 +107,17 @@ public sealed class QuoteBook(TimeProvider timeProvider)
     }
 
     public IReadOnlyCollection<UsdQuote> Snapshot() => latestQuotes.Values.ToList();
+
+    /// <summary>
+    /// Puts saved quotes back after a restart without raising <see cref="QuoteUpdated"/>: they are
+    /// history, not news. A quote the book already holds a newer price for is skipped.
+    /// </summary>
+    public void Restore(IEnumerable<UsdQuote> savedQuotes)
+    {
+        ArgumentNullException.ThrowIfNull(savedQuotes);
+        foreach (var saved in savedQuotes.Where(saved => saved.Asset != AssetKey.UsDollar && saved.PriceUsd > 0))
+        {
+            latestQuotes.AddOrUpdate(saved.Asset, saved, (_, current) => current.AsOfUtc >= saved.AsOfUtc ? current : saved);
+        }
+    }
 }
