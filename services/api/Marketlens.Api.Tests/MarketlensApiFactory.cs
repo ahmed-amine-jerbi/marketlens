@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 using Testcontainers.PostgreSql;
 
@@ -35,7 +36,13 @@ public sealed class MarketlensApiFactory : WebApplicationFactory<Program>, IAsyn
         builder.UseEnvironment("Testing");
         builder.UseSetting("DATABASE_URL", postgres.GetConnectionString());
         builder.ConfigureTestServices(services =>
-            services.AddHttpClient<FrankfurterClient>().ConfigurePrimaryHttpMessageHandler(() => new ProviderFixtures()));
+        {
+            services.AddHttpClient<FrankfurterClient>().ConfigurePrimaryHttpMessageHandler(() => new ProviderFixtures());
+            services.AddHttpClient<BinanceMarketDataClient>().ConfigurePrimaryHttpMessageHandler(() => new ProviderFixtures());
+
+            // WebSocket streams can't be answered from fixtures; their frame parsing is unit-tested.
+            services.Remove(services.Single(service => service.ServiceType == typeof(IHostedService) && service.ImplementationType == typeof(BinanceLiveFeed)));
+        });
     }
 
     public override async ValueTask DisposeAsync()

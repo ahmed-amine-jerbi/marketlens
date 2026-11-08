@@ -26,6 +26,18 @@ public sealed class CandleWriter(AssetCatalog catalog, IServiceScopeFactory scop
     /// <summary>Rows per INSERT; keeps each statement's parameter arrays a few hundred KB.</summary>
     private const int BatchSize = 5000;
 
+    /// <summary>
+    /// How far back each interval is kept (plan, data model): minutes for the 1-day chart, hours for
+    /// up to three months, days for the long ranges and forecasts.
+    /// </summary>
+    public static TimeSpan RetentionWindow(CandleInterval interval) => interval switch
+    {
+        CandleInterval.OneMinute => TimeSpan.FromDays(3),
+        CandleInterval.OneHour => TimeSpan.FromDays(120),
+        CandleInterval.OneDay => TimeSpan.FromDays(5 * 365 + 1),
+        _ => throw new ArgumentOutOfRangeException(nameof(interval), interval, null),
+    };
+
     /// <returns>The number of rows written; rows for assets not in the catalogue are skipped.</returns>
     public async Task<int> UpsertAsync(IEnumerable<CandleRow> rows, CancellationToken cancellationToken)
     {

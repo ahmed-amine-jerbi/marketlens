@@ -35,6 +35,30 @@ builder.Services.AddHttpClient<FrankfurterClient>((services, http) =>
     .SetHandlerLifetime(Timeout.InfiniteTimeSpan);
 builder.Services.AddHostedService<FiatRatesWorker>();
 
+builder.Services.Configure<BinanceOptions>(binance =>
+{
+    builder.Configuration.GetSection(BinanceOptions.Section).Bind(binance);
+    if (builder.Configuration["BINANCE_MARKET_DATA_BASE_URL"] is { Length: > 0 } marketDataBaseUrl)
+    {
+        binance.MarketDataBaseUrl = new Uri(marketDataBaseUrl);
+    }
+
+    if (builder.Configuration["BINANCE_STREAM_BASE_URL"] is { Length: > 0 } streamBaseUrl)
+    {
+        binance.StreamBaseUrl = new Uri(streamBaseUrl);
+    }
+});
+builder.Services.AddHttpClient<BinanceMarketDataClient>((services, http) =>
+    {
+        http.BaseAddress = services.GetRequiredService<IOptions<BinanceOptions>>().Value.MarketDataBaseUrl;
+        http.Timeout = TimeSpan.FromSeconds(30);
+        http.DefaultRequestHeaders.UserAgent.ParseAdd("Marketlens/0.1");
+    })
+    .UseSocketsHttpHandler((handler, _) => handler.PooledConnectionLifetime = TimeSpan.FromMinutes(15))
+    .SetHandlerLifetime(Timeout.InfiniteTimeSpan);
+builder.Services.AddHostedService<BinanceKlinesBackfill>();
+builder.Services.AddHostedService<BinanceLiveFeed>();
+
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
