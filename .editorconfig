@@ -26,3 +26,6 @@ dotnet_diagnostic.IDE0005.severity = warning
 
 [*.{csproj,props,targets,slnx}]
 indent_size = 2
+
+[services/api/**/Migrations/*.cs]
+generated_code = true
