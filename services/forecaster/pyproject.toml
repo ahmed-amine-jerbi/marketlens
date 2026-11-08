@@ -6,6 +6,8 @@ license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.162.2",
+    "pandas>=2.3",
+    "statsforecast>=2.1.1",
     "uvicorn[standard]>=0.54.0",
 ]
 
@@ -13,6 +15,7 @@ dependencies = [
 dev = [
     "httpx2>=2.16.0",
     "mypy>=2.4.1",
+    "pandas-stubs>=2.3,<3",
     "pytest>=9.2.0",
     "ruff>=0.17.4",
 ]
