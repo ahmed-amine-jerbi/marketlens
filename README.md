@@ -20,7 +20,7 @@ and how current it is. Prices are for information only, not financial advice.
 
 - **Live prices** for 161 currencies, 30 major coins, and 50 US stocks and index ETFs. Crypto
   updates every second; currencies use the daily reference rates central banks publish.
-- **Convert** any amount between any two assets: BTC → TND, EUR → JPY, ETH → BTC.
+- **Convert** any amount between any two assets: BTC → USD, EUR → JPY, ETH → BTC.
 - **Charts** from one day to five years.
 - **Your currency everywhere:** every price, chart and conversion is shown in the currency you pick.
 - **Watchlist** of the assets you follow, saved in your browser, no account needed.
