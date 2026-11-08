@@ -58,7 +58,9 @@ docs/                  architecture, decision records, feature walkthroughs, API
 
 ## Running it
 
-Requirements: Docker Desktop.
+### Prerequisites
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
 ```sh
 docker compose up --build
@@ -70,7 +72,12 @@ history fills in within a minute or two after that. No API keys are needed. Copy
 
 ### Working on the code
 
-Also needs Node.js 24+, the .NET 10 SDK and [uv](https://docs.astral.sh/uv/) for Python.
+#### Prerequisites
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- [Node.js](https://nodejs.org/) 24 or later
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
+- [uv](https://docs.astral.sh/uv/) for the Python forecaster
 
 ```sh
 docker compose up -d postgres mailpit   # database and mail catcher only
