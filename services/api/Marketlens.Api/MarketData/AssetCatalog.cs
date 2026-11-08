@@ -38,8 +38,9 @@ public sealed partial class AssetCatalog(
 
     public bool TryGet(AssetKey key, [MaybeNullWhen(false)] out CatalogEntry entry) => activeAssets.TryGetValue(key, out entry);
 
-    public IEnumerable<CatalogEntry> ActiveOf(AssetClass assetClass) =>
-        activeAssets.Values.Where(entry => entry.Key.Class == assetClass);
+    /// <summary>Active assets of one class, or of every class when <paramref name="assetClass"/> is null.</summary>
+    public IEnumerable<CatalogEntry> ActiveOf(AssetClass? assetClass) =>
+        activeAssets.Values.Where(entry => assetClass is null || entry.Key.Class == assetClass);
 
     public Task SyncListedAsync(CancellationToken cancellationToken) =>
         SyncAsync(ListedClasses, ListedAssets(), cancellationToken);

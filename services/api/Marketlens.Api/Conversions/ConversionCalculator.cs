@@ -23,8 +23,12 @@ public sealed record Conversion(
 /// </summary>
 public static class ConversionCalculator
 {
-    /// <summary>Decimal places kept on rates; matches the numeric(38,18) storage of prices.</summary>
-    public const int RateDecimalPlaces = 18;
+    /// <summary>
+    /// Significant digits kept on rates and converted amounts. Providers publish 5–10; the rest of a
+    /// ratio of two USD prices is rounding residue (a daily fiat rate stored as 1/rate), which would
+    /// otherwise show up as noise such as 227706.6842400000000715.
+    /// </summary>
+    public const int SignificantDigits = 15;
 
     private const int ChangePctDecimalPlaces = 4;
 
@@ -46,7 +50,7 @@ public static class ConversionCalculator
     public static decimal ConvertAmount(decimal amount, Conversion conversion)
     {
         ArgumentNullException.ThrowIfNull(conversion);
-        return decimal.Round(amount * conversion.Rate, RateDecimalPlaces, MidpointRounding.ToEven);
+        return RoundToSignificantDigits(amount * conversion.Rate);
     }
 
     private static decimal? CalculateChangePct(UsdQuote from, UsdQuote to, decimal rate)
@@ -60,8 +64,21 @@ public static class ConversionCalculator
         return decimal.Round((rate / referenceRate - 1m) * 100m, ChangePctDecimalPlaces, MidpointRounding.ToEven);
     }
 
+    public static decimal RoundToSignificantDigits(decimal value)
+    {
+        if (value == 0)
+        {
+            return 0;
+        }
+
+        // decimal keeps at most 28 places; the integer digits count toward the significant ones.
+        var integerDigits = (int)Math.Floor(Math.Log10((double)Math.Abs(value))) + 1;
+        var decimalPlaces = Math.Clamp(SignificantDigits - integerDigits, 0, 28);
+        return decimal.Round(value, decimalPlaces, MidpointRounding.ToEven);
+    }
+
     private static decimal Ratio(decimal numeratorUsd, decimal denominatorUsd) =>
-        decimal.Round(numeratorUsd / denominatorUsd, RateDecimalPlaces, MidpointRounding.ToEven);
+        RoundToSignificantDigits(numeratorUsd / denominatorUsd);
 
     private static void EnsurePositive(UsdQuote leg)
     {

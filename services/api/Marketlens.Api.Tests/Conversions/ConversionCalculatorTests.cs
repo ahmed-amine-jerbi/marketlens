@@ -1,3 +1,5 @@
+using System.Globalization;
+
 using Marketlens.Api.Conversions;
 using Marketlens.Api.MarketData;
 
@@ -85,6 +87,28 @@ public sealed class ConversionCalculatorTests
 
         Assert.True(conversion.Rate > 0m);
         Assert.Equal(0.00001234m / 76036.00m, conversion.Rate, precision: 18);
+    }
+
+    [Fact]
+    public void Convert_drops_the_rounding_residue_of_inverted_daily_rates()
+    {
+        var dinarFromStoredRate = TunisianDinar with { PriceUsd = decimal.Round(1m / 2.9809m, 18) };
+
+        var conversion = ConversionCalculator.Convert(Bitcoin, dinarFromStoredRate);
+
+        Assert.Equal(226_655.7124m, conversion.Rate);
+    }
+
+    [Theory]
+    [InlineData("227706.6842400000000715", "227706.684240000")]
+    [InlineData("0.000000000162291546", "0.000000000162291546")]
+    [InlineData("1234567890123456789", "1234567890123456789")]
+    [InlineData("0.1234567890123456789", "0.123456789012346")]
+    public void RoundToSignificantDigits_keeps_fifteen_significant_digits(string value, string expected)
+    {
+        var rounded = ConversionCalculator.RoundToSignificantDigits(decimal.Parse(value, CultureInfo.InvariantCulture));
+
+        Assert.Equal(decimal.Parse(expected, CultureInfo.InvariantCulture), rounded);
     }
 
     [Fact]

@@ -1,7 +1,10 @@
 using System.Net.Http.Headers;
 
+using Marketlens.Api.Conversions;
 using Marketlens.Api.Data;
+using Marketlens.Api.Http;
 using Marketlens.Api.MarketData;
+using Marketlens.Api.Quotes;
 
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
@@ -126,10 +129,20 @@ builder.Services.AddHttpClient<TwelveDataClient>((services, http) =>
 builder.Services.AddHostedService<TwelveDataHistoryBackfill>();
 builder.Services.AddHostedService<SampleStockFeed>();
 
+builder.Services.AddSingleton<QuoteReader>();
+builder.Services.AddApiConventions(builder.Configuration);
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
+app.UseApiConventions();
 app.MapHealthChecks("/health");
+
+var api = app.MapGroup("/api/v1")
+    .RequireRateLimiting(ApiConventions.PublicRateLimit)
+    .ProducesProblem(StatusCodes.Status400BadRequest)
+    .ProducesProblem(StatusCodes.Status429TooManyRequests);
+api.MapQuoteEndpoints();
+api.MapConversionEndpoints();
 
 app.Run();

@@ -55,39 +55,39 @@ public sealed partial class QuoteSnapshots(
 
     public async Task<int> SaveAsync(CancellationToken cancellationToken)
     {
+        var quotes = quoteBook.Snapshot()
+            .Select(quote => (Quote: quote, IsListed: catalog.TryGet(quote.Asset, out var entry), AssetId: entry?.Id ?? Guid.Empty))
+            .Where(row => row.IsListed)
+            .ToList();
+        if (quotes.Count == 0)
+        {
+            return 0;
+        }
+
+        var assetIds = quotes.Select(row => row.AssetId).ToArray();
+        var prices = quotes.Select(row => row.Quote.PriceUsd).ToArray();
+        var references = quotes.Select(row => row.Quote.ReferencePriceUsd).ToArray();
+        var asOfTimes = quotes.Select(row => DateTime.SpecifyKind(row.Quote.AsOfUtc, DateTimeKind.Utc)).ToArray();
+        var sources = quotes.Select(row => row.Quote.Source).ToArray();
+        var freshness = quotes.Select(row => row.Quote.Freshness.ToString().ToLowerInvariant()).ToArray();
+
         await using var scope = scopeFactory.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<MarketlensDbContext>();
 
-        var quotes = quoteBook.Snapshot()
-            .Select(quote => catalog.TryGet(quote.Asset, out var entry) ? (entry.Id, Quote: quote) : default)
-            .Where(row => row.Quote is not null)
-            .ToList();
-        var existing = await db.QuoteSnapshots.ToDictionaryAsync(snapshot => snapshot.AssetId, cancellationToken);
-
-        foreach (var (assetId, quote) in quotes)
-        {
-            if (!existing.TryGetValue(assetId, out var snapshot))
-            {
-                db.QuoteSnapshots.Add(new QuoteSnapshot
-                {
-                    AssetId = assetId,
-                    PriceUsd = quote.PriceUsd,
-                    ReferencePriceUsd = quote.ReferencePriceUsd,
-                    AsOfUtc = quote.AsOfUtc,
-                    Source = quote.Source,
-                    Freshness = quote.Freshness,
-                });
-                continue;
-            }
-
-            snapshot.PriceUsd = quote.PriceUsd;
-            snapshot.ReferencePriceUsd = quote.ReferencePriceUsd;
-            snapshot.AsOfUtc = quote.AsOfUtc;
-            snapshot.Source = quote.Source;
-            snapshot.Freshness = quote.Freshness;
-        }
-
-        await db.SaveChangesAsync(cancellationToken);
+        // One atomic upsert: safe if two processes ever save at the same moment.
+        await db.Database.ExecuteSqlAsync(
+            $"""
+            INSERT INTO quote_snapshots (asset_id, price_usd, reference_price_usd, as_of_utc, source, freshness)
+            SELECT * FROM unnest({assetIds}, {prices}, {references}, {asOfTimes}, {sources}, {freshness})
+            ON CONFLICT (asset_id) DO UPDATE SET
+                price_usd = EXCLUDED.price_usd,
+                reference_price_usd = EXCLUDED.reference_price_usd,
+                as_of_utc = EXCLUDED.as_of_utc,
+                source = EXCLUDED.source,
+                freshness = EXCLUDED.freshness
+            WHERE quote_snapshots.as_of_utc <= EXCLUDED.as_of_utc
+            """,
+            cancellationToken);
         return quotes.Count;
     }
 

@@ -12,8 +12,8 @@ public enum AssetClass
 }
 
 /// <summary>
-/// Stable identifier of an asset across the API, database and clients: <c>&lt;class&gt;:&lt;symbol&gt;</c>,
-/// for example <c>fiat:EUR</c>, <c>crypto:BTC</c>, <c>stock:BRK.B</c>, <c>etf:SPY</c>.
+/// Stable identifier of an asset across the API, database and clients: the class, a colon and the
+/// symbol, for example <c>fiat:EUR</c>, <c>crypto:BTC</c>, <c>stock:BRK.B</c>, <c>etf:SPY</c>.
 /// </summary>
 public readonly partial record struct AssetKey(AssetClass Class, string Symbol)
 {
