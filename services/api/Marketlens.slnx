@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Marketlens.Api.Tests/Marketlens.Api.Tests.csproj" />
+  <Project Path="Marketlens.Api/Marketlens.Api.csproj" />
+</Solution>
