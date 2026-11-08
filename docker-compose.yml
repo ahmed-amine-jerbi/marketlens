@@ -43,9 +43,19 @@ services:
       COINGECKO_DEMO_API_KEY: ${COINGECKO_DEMO_API_KEY:-}
       BINANCE_MARKET_DATA_BASE_URL: ${BINANCE_MARKET_DATA_BASE_URL:-https://data-api.binance.vision}
       BINANCE_STREAM_BASE_URL: ${BINANCE_STREAM_BASE_URL:-wss://data-stream.binance.vision}
+      FORECASTER_BASE_URL: http://forecaster:8001
     depends_on:
       postgres:
         condition: service_healthy
+
+  # Computes forecasts for the API. No published port: only services on this network reach it.
+  forecaster:
+    build: services/forecaster
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
   web:
     build:
