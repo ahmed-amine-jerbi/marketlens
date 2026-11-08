@@ -1,5 +1,7 @@
 # Marketlens
 
+![Marketlens: live prices, any conversion, honest forecasts](docs/images/banner.svg)
+
 Marketlens shows live prices for currencies, cryptocurrencies, US stocks and world-index ETFs,
 converts between any two of them, and charts their history, on the web and on a phone. Each asset
 can show a 1–7 day forecast as a shaded range, together with a measured track record of how often
@@ -8,6 +10,16 @@ past forecasts were right. Forecasts are estimates, not financial advice.
 > **Status:** in development. The foundation (repository, toolchains, local database and mail
 > catcher, CI) is in place; market data, the web app, forecasts, accounts, alerts and the mobile
 > app follow in that order. This README is updated as each part lands.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/preview-asset-dark.svg">
+  <img alt="Design preview of the Bitcoin page: the price, a three-month chart that hands over to a shaded seven-day forecast range, and a sentence saying how often past forecasts held." src="docs/images/preview-asset-light.svg">
+</picture>
+
+*Design preview of an asset page, drawn from the app's design tokens. Real screenshots of the web
+and mobile apps replace it as each one is built.* The history line hands over to the forecast: the
+darker band is where the price should land 80% of the time, the lighter one 95%, and the sentence
+under the chart says how often that held in the past.
 
 ## What v1 will do
 
@@ -44,7 +56,7 @@ More in [docs/architecture.md](docs/architecture.md) and the decision records in
 
 ## Repository layout
 
-```
+```text
 apps/web/              web app (arrives with the web milestone)
 apps/mobile/           mobile app (arrives with the mobile milestone)
 packages/shared/       design tokens, UI strings, formatting and API types for both apps

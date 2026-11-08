@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" font-family="'IBM Plex Sans', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-labelledby="title">
+  <title id="title">Marketlens: live prices, any conversion, honest forecasts</title>
+  <rect width="1200" height="300" rx="20" fill="#0E141B"/>
+  <text x="64" y="132" font-size="56" font-weight="600" fill="#E4E9EF" letter-spacing="-1">Marketlens</text>
+  <text x="66" y="180" font-size="22" fill="#94A2B0">Live prices, any conversion, honest forecasts.</text>
+  <text x="66" y="226" font-size="14" fill="#94A2B0">Currencies · Crypto · US stocks · Index ETFs  —  web and mobile, open source</text>
+  <path d="M960,188.4 C1040,160.4 1090,88.4 1150,84.4 L1150,224.4 C1090,228.4 1040,216.4 960,188.4 Z" fill="#86A3FF" fill-opacity="0.14"/>
+  <path d="M960,188.4 C1040,173.2 1090,120.4 1150,116.4 L1150,192.4 C1090,196.4 1040,203.6 960,188.4 Z" fill="#86A3FF" fill-opacity="0.3"/>
+  <path d="M640,187.8 L650,180.4 L660,189.5 L670,193.7 L680,194.6 L690,193.4 L700,193.4 L710,189.2 L720,190.7 L730,195.4 L740,191.6 L750,185.9 L760,191.2 L770,192.1 L780,187.2 L790,185.3 L800,182.1 L810,183.3 L820,180.2 L830,189.3 L840,185.3 L850,192.7 L860,187.6 L870,181.8 L880,176.1 L890,172.9 L900,174.3 L910,179.5 L920,172.4 L930,180.4 L940,181.9 L950,184.6 L960,188.4" fill="none" stroke="#E4E9EF" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M960,188.4 C1040,188.4 1090,158.4 1150,154.4" fill="none" stroke="#86A3FF" stroke-width="3" stroke-dasharray="7 7" stroke-linecap="round"/>
+  <circle cx="960" cy="188.4" r="6" fill="#E4E9EF"/>
+</svg>

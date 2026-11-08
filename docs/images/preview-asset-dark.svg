@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" font-family="'IBM Plex Sans', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-labelledby="title desc">
+  <title id="title">Marketlens design preview: Bitcoin asset page (dark theme)</title>
+  <desc id="desc">Bitcoin at 87,412.55 US dollars, up -1.81 percent over 24 hours, with a three-month price chart that hands over to a shaded seven-day forecast range and a sentence stating the forecast track record.</desc>
+  <rect width="1200" height="760" fill="#0E141B"/>
+
+  <rect width="1200" height="64" fill="#151D26"/>
+  <line x1="0" x2="1200" y1="64" y2="64" stroke="#263241"/>
+  <text x="24" y="40" font-size="20" font-weight="600" fill="#E4E9EF">Marketlens</text>
+  <rect x="220" y="14" width="460" height="36" rx="6" fill="#0E141B" stroke="#263241"/>
+  <circle cx="242" cy="31" r="6" fill="none" stroke="#94A2B0" stroke-width="1.5"/>
+  <line x1="246.5" y1="35.5" x2="251" y2="40" stroke="#94A2B0" stroke-width="1.5" stroke-linecap="round"/>
+  <text x="260" y="37" font-size="14" fill="#94A2B0">Search currencies, coins, stocks…</text>
+  <text x="964" y="37" font-size="14" fill="#E4E9EF">EN</text>
+  <path d="M994 37 l4 4 l4 -4" fill="none" stroke="#94A2B0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" transform="translate(0 -6)"/>
+  <circle cx="1038" cy="32" r="8" fill="none" stroke="#E4E9EF" stroke-width="1.5"/>
+  <path d="M1038 24 a8 8 0 0 1 0 16 z" fill="#E4E9EF"/>
+  <rect x="1072" y="16" width="104" height="32" rx="6" fill="#86A3FF"/>
+  <text x="1124" y="37" font-size="14" font-weight="600" text-anchor="middle" fill="#151D26">Sign in</text>
+
+  
+  <text x="24" y="109" font-size="14" font-weight="400" fill="#94A2B0">Home</text>
+  
+  <text x="24" y="149" font-size="14" font-weight="400" fill="#94A2B0">Currencies</text>
+  <rect x="12" y="168" width="172" height="32" rx="6" fill="#151D26"/>
+  <text x="24" y="189" font-size="14" font-weight="600" fill="#E4E9EF">Crypto</text>
+  
+  <text x="24" y="229" font-size="14" font-weight="400" fill="#94A2B0">Stocks</text>
+  
+  <text x="24" y="269" font-size="14" font-weight="400" fill="#94A2B0">Alerts</text>
+
+  <rect x="220" y="88" width="956" height="648" rx="10" fill="#151D26"/>
+  <text x="252" y="132" font-size="25" font-weight="600" fill="#E4E9EF">Bitcoin <tspan font-weight="400" fill="#94A2B0" font-size="20">BTC</tspan></text>
+  <rect x="932" y="110" width="96" height="32" rx="6" fill="none" stroke="#263241"/>
+  <text x="980" y="131" font-size="14" text-anchor="middle" fill="#E4E9EF">☆ Watch</text>
+  <rect x="1040" y="110" width="104" height="32" rx="6" fill="none" stroke="#263241"/>
+  <text x="1092" y="131" font-size="14" text-anchor="middle" fill="#E4E9EF">Set alert</text>
+
+  <text x="252" y="192" font-size="40" font-weight="600" fill="#E4E9EF" style="font-variant-numeric: tabular-nums">87,412.55 <tspan font-size="20" font-weight="400" fill="#94A2B0">USD</tspan></text>
+  <text x="252" y="220" font-size="14" fill="#94A2B0"><tspan fill="#F1735F" font-weight="600">▼ −1,615.79 (−1.81%)</tspan>  past 24 h  ·  live, 2 s ago</text>
+
+    <rect x="252" y="236" width="44" height="28" rx="6" fill="none" stroke="#263241"/>
+    <text x="274" y="255" font-size="14" text-anchor="middle" font-weight="400" fill="#E4E9EF">1D</text>
+    <rect x="304" y="236" width="44" height="28" rx="6" fill="none" stroke="#263241"/>
+    <text x="326" y="255" font-size="14" text-anchor="middle" font-weight="400" fill="#E4E9EF">1W</text>
+    <rect x="356" y="236" width="44" height="28" rx="6" fill="none" stroke="#263241"/>
+    <text x="378" y="255" font-size="14" text-anchor="middle" font-weight="400" fill="#E4E9EF">1M</text>
+    <rect x="408" y="236" width="44" height="28" rx="6" fill="#86A3FF" stroke="#86A3FF"/>
+    <text x="430" y="255" font-size="14" text-anchor="middle" font-weight="600" fill="#151D26">3M</text>
+    <rect x="460" y="236" width="44" height="28" rx="6" fill="none" stroke="#263241"/>
+    <text x="482" y="255" font-size="14" text-anchor="middle" font-weight="400" fill="#E4E9EF">1Y</text>
+    <rect x="512" y="236" width="44" height="28" rx="6" fill="none" stroke="#263241"/>
+    <text x="534" y="255" font-size="14" text-anchor="middle" font-weight="400" fill="#E4E9EF">5Y</text>
+  <rect x="994" y="242" width="16" height="16" rx="3" fill="#86A3FF"/>
+  <path d="M998 250 l3 3 l6 -6" fill="none" stroke="#151D26" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="1018" y="255" font-size="14" fill="#E4E9EF">Show forecast</text>
+
+    <line x1="252" x2="1080" y1="555.2" y2="555.2" stroke="#263241" stroke-width="1"/>
+    <text x="1092" y="559.2" font-size="12" fill="#94A2B0">70,000</text>
+    <line x1="252" x2="1080" y1="511.2" y2="511.2" stroke="#263241" stroke-width="1"/>
+    <text x="1092" y="515.2" font-size="12" fill="#94A2B0">75,000</text>
+    <line x1="252" x2="1080" y1="467.2" y2="467.2" stroke="#263241" stroke-width="1"/>
+    <text x="1092" y="471.2" font-size="12" fill="#94A2B0">80,000</text>
+    <line x1="252" x2="1080" y1="423.3" y2="423.3" stroke="#263241" stroke-width="1"/>
+    <text x="1092" y="427.3" font-size="12" fill="#94A2B0">85,000</text>
+    <line x1="252" x2="1080" y1="379.3" y2="379.3" stroke="#263241" stroke-width="1"/>
+    <text x="1092" y="383.3" font-size="12" fill="#94A2B0">90,000</text>
+    <line x1="252" x2="1080" y1="335.3" y2="335.3" stroke="#263241" stroke-width="1"/>
+    <text x="1092" y="339.3" font-size="12" fill="#94A2B0">95,000</text>
+    <line x1="252" x2="1080" y1="291.3" y2="291.3" stroke="#263241" stroke-width="1"/>
+    <text x="1092" y="295.3" font-size="12" fill="#94A2B0">100,000</text>
+  <path d="M1019.6,402.0 L1028.3,364.0 L1036.9,347.2 L1045.5,333.8 L1054.1,322.1 L1062.8,311.6 L1071.4,301.9 L1080.0,292.8 L1080.0,486.3 L1071.4,480.8 L1062.8,474.6 L1054.1,467.7 L1045.5,459.6 L1036.9,449.8 L1028.3,436.5 L1019.6,402.0 Z" fill="#86A3FF" fill-opacity="0.14"/>
+  <path d="M1019.6,402.0 L1028.3,377.1 L1036.9,365.9 L1045.5,357.0 L1054.1,349.3 L1062.8,342.3 L1071.4,335.9 L1080.0,329.8 L1080.0,456.2 L1071.4,452.7 L1062.8,448.8 L1054.1,444.4 L1045.5,439.3 L1036.9,433.0 L1028.3,424.4 L1019.6,402.0 Z" fill="#86A3FF" fill-opacity="0.26"/>
+  <line x1="1019.6" x2="1019.6" y1="284" y2="614" stroke="#263241" stroke-dasharray="3 4"/>
+  <text x="1011.6" y="298" font-size="12" text-anchor="end" fill="#94A2B0">Next 7 days</text>
+  <path d="M252.0,573.8 L260.6,581.0 L269.3,571.5 L277.9,566.0 L286.5,570.4 L295.1,575.3 L303.8,573.8 L312.4,575.3 L321.0,566.3 L329.6,581.2 L338.3,573.0 L346.9,579.1 L355.5,583.4 L364.1,575.2 L372.8,582.3 L381.4,582.8 L390.0,573.2 L398.6,587.9 L407.3,597.7 L415.9,601.6 L424.5,600.4 L433.1,598.3 L441.8,602.5 L450.4,599.8 L459.0,598.8 L467.6,601.4 L476.3,592.7 L484.9,604.8 L493.5,597.7 L502.1,605.5 L510.8,598.2 L519.4,581.8 L528.0,575.5 L536.6,572.5 L545.3,558.2 L553.9,550.6 L562.5,538.2 L571.1,541.8 L579.8,534.4 L588.4,542.1 L597.0,532.3 L605.6,540.2 L614.3,547.4 L622.9,550.1 L631.5,558.4 L640.1,547.4 L648.8,548.7 L657.4,556.7 L666.0,546.4 L674.6,541.2 L683.3,540.5 L691.9,544.0 L700.5,540.3 L709.1,532.2 L717.8,519.2 L726.4,501.1 L735.0,493.8 L743.6,502.1 L752.3,515.0 L760.9,502.1 L769.5,512.2 L778.1,509.3 L786.8,501.2 L795.4,498.5 L804.0,491.2 L812.6,503.5 L821.3,487.5 L829.9,486.8 L838.5,479.4 L847.1,469.8 L855.8,475.1 L864.4,474.0 L873.0,474.2 L881.6,481.4 L890.3,466.1 L898.9,462.1 L907.5,470.7 L916.1,476.7 L924.8,470.2 L933.4,454.4 L942.0,437.0 L950.6,426.1 L959.3,414.7 L967.9,407.6 L976.5,404.6 L985.1,397.4 L993.8,413.1 L1002.4,402.0 L1011.0,387.8 L1019.6,402.0" fill="none" stroke="#E4E9EF" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M1019.6,402.0 L1028.3,401.1 L1036.9,400.2 L1045.5,399.3 L1054.1,398.3 L1062.8,397.4 L1071.4,396.5 L1080.0,395.5" fill="none" stroke="#86A3FF" stroke-width="2" stroke-dasharray="5 5" stroke-linecap="round"/>
+  <circle cx="1019.6" cy="402.0" r="4" fill="#E4E9EF"/>
+    <text x="252.0" y="636" font-size="12" fill="#94A2B0" text-anchor="middle">Aug 11</text>
+    <text x="510.8" y="636" font-size="12" fill="#94A2B0" text-anchor="middle">Sep 10</text>
+    <text x="769.5" y="636" font-size="12" fill="#94A2B0" text-anchor="middle">Oct 10</text>
+    <text x="1019.6" y="636" font-size="12" fill="#94A2B0" text-anchor="middle">Nov 8</text>
+    <text x="1080.0" y="636" font-size="12" fill="#94A2B0" text-anchor="middle">Nov 15</text>
+
+  <text x="252" y="678" font-size="16" fill="#E4E9EF">Over the last 8 weeks, the real price stayed inside the darker shaded range 81% of the time.</text>
+  <text x="252" y="704" font-size="14" fill="#94A2B0">Forecasts are estimates, not financial advice.  <tspan fill="#86A3FF" text-decoration="underline">How this works</tspan></text>
+
+  <text x="1176" y="752" font-size="12" text-anchor="end" fill="#94A2B0">Design preview, not a screenshot</text>
+</svg>
