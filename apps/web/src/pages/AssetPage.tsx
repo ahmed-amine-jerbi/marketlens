@@ -41,7 +41,7 @@ export function AssetPage() {
   }
 
   if (detail.isError) {
-    return <LoadError onRetry={() => void detail.refetch()} />;
+    return <LoadError error={detail.error} onRetry={() => void detail.refetch()} />;
   }
 
   if (detail.isPending) {

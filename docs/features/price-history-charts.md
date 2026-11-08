@@ -3,7 +3,7 @@
 > Gives each asset (or any pair) a price series for 1D, 1W, 1M, 3M, 1Y and 5Y in the user's display
 > currency, small enough to draw quickly.
 
-**Status:** API shipped (M2); chart components in M3 (web) and M7 (mobile) · **Owner area:**
+**Status:** shipped on the web (M3); mobile in M7 · **Owner area:**
 `services/api/Marketlens.Api/History/` · **Last updated:** 2026-11-08
 
 ## What it does
@@ -55,6 +55,11 @@ flowchart LR
 - **Query:** [HistoryQuery](../../services/api/Marketlens.Api/History/HistoryQuery.cs#L28) owns the
   range table, the as-of join (a single forward pass over two sorted lists) and down-sampling.
   USD points are rounded like every other price.
+- **Web chart:** [PriceChart](../../apps/web/src/components/PriceChart.tsx) (Recharts area line in
+  the ink colour over a faint accent fill, compact axis labels, a tooltip in the visitor's language,
+  `role="img"` with a first-to-last sentence for screen readers, and a caption when a short range
+  falls back to daily points). The asset page ([AssetPage](../../apps/web/src/pages/AssetPage.tsx))
+  holds the range buttons and shows an asset in US dollars when it is the display currency itself.
 - **Where the candles come from:** see [market data ingestion](market-data-ingestion.md).
 
 ## Services and dependencies
@@ -104,3 +109,4 @@ types. A finer interval for a range needs that interval stored and retained (`Ca
 ## Changelog
 
 - 2026-11-08 — Created (marketlens-v1, M2).
+- 2026-11-08 — Web chart (M3).

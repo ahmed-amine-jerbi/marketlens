@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
 
+import { ApiProblemError } from "../api/client";
+
 /** Placeholder rows shaped like the table that will replace them, so nothing jumps on arrival. */
 export function TableSkeleton({ rows = 6 }: { rows?: number }) {
   return (
@@ -16,12 +18,13 @@ export function TableSkeleton({ rows = 6 }: { rows?: number }) {
 }
 
 /** What went wrong, in plain words, and a way to try again. */
-export function LoadError({ onRetry }: { onRetry: () => void }) {
+export function LoadError({ error, onRetry }: { error?: unknown; onRetry: () => void }) {
   const { t } = useTranslation();
+  const isRateLimited = error instanceof ApiProblemError && error.status === 429;
 
   return (
     <div role="alert" className="rounded-panel border border-divider bg-surface p-4 text-small">
-      <p>{t("errors.loadFailed")}</p>
+      <p>{t(isRateLimited ? "errors.tooManyRequests" : "errors.loadFailed")}</p>
       <button
         type="button"
         onClick={onRetry}

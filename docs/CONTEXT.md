@@ -57,13 +57,13 @@ Full list with walkthroughs: [features/README.md](features/README.md).
 |---|---|---|---|
 | Repository foundation (toolchains, Compose, CI) | root, `services/*`, `packages/shared` | shipped (M1) | — |
 | Market data ingestion | `services/api/Marketlens.Api/MarketData/` | shipped (M2) | [features/market-data-ingestion.md](features/market-data-ingestion.md) |
-| Live quotes | `Quotes/` (REST + SignalR hub) | API shipped (M2); screens M3/M7 | [features/live-quotes.md](features/live-quotes.md) |
-| Currency conversion (reference implementation) | `Conversions/` | API shipped (M2); screens M3/M7 | [features/currency-conversion.md](features/currency-conversion.md) |
-| Price history charts | `History/` | API shipped (M2); charts M3/M7 | [features/price-history-charts.md](features/price-history-charts.md) |
-| Localization | `packages/shared/src/i18n`, `Locale/` | locale suggestion API shipped (M2); UI M3 | `features/localization.md` (M3) |
+| Live quotes | `Quotes/`, `apps/web/src/api/liveQuotes.ts` | web shipped (M3); mobile M7 | [features/live-quotes.md](features/live-quotes.md) |
+| Currency conversion (reference implementation) | `Conversions/`, `apps/web/src/conversions/` | web shipped (M3); mobile M7 | [features/currency-conversion.md](features/currency-conversion.md) |
+| Price history charts | `History/`, `apps/web/src/components/PriceChart.tsx` | web shipped (M3); mobile M7 | [features/price-history-charts.md](features/price-history-charts.md) |
+| Localization | `packages/shared/src/i18n`, `apps/web/src/settings/`, `Locale/` | web shipped (M3); GeoLite2 D47 | [features/localization.md](features/localization.md) |
 | Forecasts | `services/forecaster`, `Forecasts/` | planned (M4) | `features/forecasts.md` |
 | Accounts and sign-in | `Accounts/` | planned (M5) | `features/accounts-and-sign-in.md` |
-| Watchlists | `Watchlists/` | planned (M3, sync M5) | `features/watchlists.md` |
+| Watchlists | `apps/web/src/watchlist/` (device); `Watchlists/` (M5) | web shipped on the device (M3); sync M5 | [features/watchlists.md](features/watchlists.md) |
 | Price alerts | `Alerts/` | planned (M6) | `features/price-alerts.md` |
 | Market news | `News/` | planned (M6) | `features/market-news.md` |
 
@@ -116,10 +116,14 @@ Visual design section.
 
 ## 9. Environments and config
 
-- **Local:** `docker compose up -d` (PostgreSQL :5432, Mailpit :8025), API `dotnet run` on :5080
+- **Whole app:** `docker compose up --build` → http://localhost:8080 (nginx serves the web app and
+  proxies `/api` and `/hubs` to the API on the Compose network 172.28.0.0/16, which the API trusts
+  for forwarded headers).
+- **Development:** `docker compose up -d postgres mailpit` (PostgreSQL :5432, Mailpit :8025), API `dotnet run` on :5080
   (applies migrations, fills fiat and crypto history within minutes, sample stocks immediately;
   OpenAPI at `/openapi/v1.json`, live hub at `/hubs/quotes`), forecaster `uv run uvicorn` on
-  :8001. No keys needed.
+  :8001, web `npm run dev -w @marketlens/web` on :5173 (proxies `/api` and `/hubs` to :5080). No keys
+  needed. E2E + axe: `npm run test:e2e -w @marketlens/web` against :8080.
 - **Public demo:** after v1, gated on checking each provider's display terms.
 - **Config:** non-secret defaults in `services/api/Marketlens.Api/appsettings.json`; secrets and
   per-deployment values from environment variables, all listed in [`.env.example`](../.env.example)
@@ -136,6 +140,9 @@ and the plan's Decisions section. Architecture decisions: [adr/](adr/).
 - 2026-11-08 D44 build M2 without keys (sample stocks); D45 provider terms recorded, public demo
   needs its own decision; D46 provider ids as typed columns (Npgsql couldn't read EF Core 10 JSON
   complex types); D47 GeoLite2 moves to M3.
+- 2026-11-08 Web: prices ≥ 10 show two decimals, 1–10 up to four, below 1 four significant digits;
+  public rate limit 600/min per IP (one page view makes about a dozen calls); built files under
+  `/static/` so they never collide with `/assets/<key>` pages; D48 push to GitHub after M3.
 - 2026-11-08 Rates and amounts keep 15 significant digits (ratios of USD prices otherwise show
   rounding residue).
 
@@ -151,6 +158,9 @@ and the plan's Decisions section. Architecture decisions: [adr/](adr/).
   feature folder, handlers returning `Results<Ok<T>, ProblemHttpResult>` with `.WithSummary`,
   errors from `ApiProblems`, rules in a pure class with unit tests; map it in `Program.cs` under
   the `/api/v1` group (rate limited).
+- **Add a page:** a component in `apps/web/src/pages/`, a lazy route in `app/routes.tsx`, strings
+  in all three `packages/shared/src/i18n/*.json` (the messages test enforces it), a nav entry in
+  `app/Layout.tsx` if it belongs in the menu, and an E2E + axe entry in `apps/web/e2e/app.spec.ts`.
 - **Change the API contract:** change the code, run `MARKETLENS_UPDATE_OPENAPI=1 dotnet test` in
   `services/api` to rewrite `openapi/v1.json`, review the diff, then `npm run generate:api` and
   `npm run lint:api`. CI fails if either file is stale.

@@ -126,6 +126,7 @@
     "retry": "Réessayer",
     "pageNotFound": "Cette page n’existe pas.",
     "backHome": "Retour à l’accueil",
-    "unexpected": "Un problème est survenu sur cette page. Rechargez-la pour réessayer."
+    "unexpected": "Un problème est survenu sur cette page. Rechargez-la pour réessayer.",
+    "tooManyRequests": "Trop de requêtes depuis votre réseau. Patientez une minute puis réessayez."
   }
 }

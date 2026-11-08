@@ -17,8 +17,11 @@ public sealed class RateLimitOptions
 {
     public const string Section = "RateLimits";
 
-    /// <summary>Requests per minute per client IP on the public read endpoints.</summary>
-    public int PublicPerMinute { get; set; } = 120;
+    /// <summary>
+    /// Requests per minute per client IP on the public read endpoints. One page view makes about a
+    /// dozen calls and households or offices share an IP, so this sits well above one person's use.
+    /// </summary>
+    public int PublicPerMinute { get; set; } = 600;
 }
 
 /// <summary>

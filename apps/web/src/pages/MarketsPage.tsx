@@ -89,7 +89,7 @@ function Market({ market }: { market: Market }) {
       </label>
 
       <div className="mt-4 rounded-panel bg-surface px-4 py-1">
-        {failed && <LoadError onRetry={() => void failed.refetch()} />}
+        {failed && <LoadError error={failed.error} onRetry={() => void failed.refetch()} />}
         {isLoading && <TableSkeleton rows={10} />}
         {!isLoading && !failed && shown.length === 0 && (
           <p className="py-6 text-small text-muted">{t("search.noResults", { query: filter })}</p>

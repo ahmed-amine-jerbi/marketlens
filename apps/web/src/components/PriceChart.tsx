@@ -43,7 +43,7 @@ export function PriceChart({
   if (history.isError) {
     return (
       <div className="mt-4">
-        <LoadError onRetry={() => void history.refetch()} />
+        <LoadError error={history.error} onRetry={() => void history.refetch()} />
       </div>
     );
   }

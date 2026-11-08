@@ -126,6 +126,7 @@
     "retry": "Try again",
     "pageNotFound": "This page doesn't exist.",
     "backHome": "Back to the home page",
-    "unexpected": "Something broke on this page. Reload to try again."
+    "unexpected": "Something broke on this page. Reload to try again.",
+    "tooManyRequests": "Too many requests from your network. Wait a minute and try again."
   }
 }

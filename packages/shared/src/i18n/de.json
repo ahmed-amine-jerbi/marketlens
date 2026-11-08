@@ -126,6 +126,7 @@
     "retry": "Erneut versuchen",
     "pageNotFound": "Diese Seite gibt es nicht.",
     "backHome": "Zur Startseite",
-    "unexpected": "Auf dieser Seite ist ein Fehler aufgetreten. Laden Sie sie neu."
+    "unexpected": "Auf dieser Seite ist ein Fehler aufgetreten. Laden Sie sie neu.",
+    "tooManyRequests": "Zu viele Anfragen aus Ihrem Netzwerk. Warten Sie eine Minute und versuchen Sie es erneut."
   }
 }

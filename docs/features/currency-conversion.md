@@ -3,7 +3,7 @@
 > Converts any amount between any two tracked assets (fiat, coins, stocks, ETFs) and expresses
 > every price in the user's display currency, with all the arithmetic done once, on the server.
 
-**Status:** API shipped (M2); web converter in M3, mobile in M7 · **Owner area:**
+**Status:** shipped on the web (M3); mobile in M7 · **Owner area:**
 `services/api/Marketlens.Api/Conversions/` · **Last updated:** 2026-11-08
 
 This is the project's **reference implementation** (D41): new features copy its shape: a thin
@@ -74,6 +74,11 @@ sequenceDiagram
 - **Serialization:** [DecimalAsStringConverter](../../services/api/Marketlens.Api/Http/ApiConventions.cs)
   writes decimals as strings without trailing zeros (D39); the OpenAPI document marks them
   `type: string, format: decimal`, so the generated TypeScript type is `string`.
+- **Web:** [ConverterPanel](../../apps/web/src/conversions/ConverterPanel.tsx) on the home, asset and
+  convert pages: amount parsed in the visitor's language, asset pickers grouped by class, swap; the
+  first answer comes from `/conversions`, then the live hub keeps the rate current and the panel
+  multiplies the typed amount by it for display only. The "to" side follows the display currency
+  until the visitor picks one.
 - **Client types:** `@marketlens/shared/api` ([schema.ts](../../packages/shared/src/api/schema.ts),
   generated, never edited).
 
@@ -94,12 +99,12 @@ Reads only; nothing is stored.
 | `GET /api/v1/conversions?from=&to=&amount=` | `{from, to, rate, amount, convertedAmount, changePct, asOfUtc, freshness, legs[{key, priceUsd, asOfUtc, source, freshness}]}` |
 | `GET /api/v1/conversions/history?from=&to=&range=` | see [price history](price-history-charts.md) |
 
-Public, rate limited per IP (120/min). Errors are listed in [problems.md](../api/problems.md).
+Public, rate limited per IP (600/min). Errors are listed in [problems.md](../api/problems.md).
 Full contract: [openapi/v1.json](../../services/api/openapi/v1.json).
 
 ## Configuration
 
-`RateLimits:PublicPerMinute` (120). `ConversionCalculator.SignificantDigits` (15) and
+`RateLimits:PublicPerMinute` (600). `ConversionCalculator.SignificantDigits` (15) and
 `ConversionEndpoints.MaxAmount` (10^15) are constants, because changing them changes the contract.
 
 ## Errors and edge cases
@@ -124,8 +129,9 @@ A new asset needs nothing here. A new kind of answer (for example fees) belongs 
 
 ## Known limitations and follow-ups
 
-- Web and mobile converter screens arrive in M3 and M7.
+- The mobile converter arrives in M7.
 
 ## Changelog
 
 - 2026-11-08 — Created (marketlens-v1, M2).
+- 2026-11-08 — Web converter (M3).

@@ -138,7 +138,7 @@ function BiggestMoves() {
         ))}
       </div>
       <div role="tabpanel" className="mt-2 rounded-panel bg-surface px-4 py-1">
-        {quotes.isError && <LoadError onRetry={() => void quotes.refetch()} />}
+        {quotes.isError && <LoadError error={quotes.error} onRetry={() => void quotes.refetch()} />}
         {(first.isPending || quotes.isPending) && !quotes.isError && (
           <TableSkeleton rows={MOVES_SHOWN} />
         )}

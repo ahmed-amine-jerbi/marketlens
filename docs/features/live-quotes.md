@@ -3,7 +3,7 @@
 > Serves the latest price of any asset in any display currency over REST, and pushes new prices to
 > watching clients within about a second over SignalR, without a page refresh.
 
-**Status:** API shipped (M2); web and mobile screens in M3 and M7 · **Owner area:**
+**Status:** shipped on the web (M3); mobile in M7 · **Owner area:**
 `services/api/Marketlens.Api/Quotes/` · **Last updated:** 2026-11-08
 
 ## What it does
@@ -76,6 +76,19 @@ sequenceDiagram
 - **Broadcasting:** groups are `quotes:<asset>:<in>`; the broadcaster sends only to groups whose
   asset or display currency moved.
 
+## Web layer (M3)
+
+- [liveQuotes.ts](../../apps/web/src/api/liveQuotes.ts): one SignalR connection for the app,
+  watcher counting so components share subscriptions, resubscribe after reconnecting, and a quote
+  store read with `useSyncExternalStore`; REST answers ([queries.ts](../../apps/web/src/api/queries.ts))
+  seed the same store.
+- [QuoteParts.tsx](../../apps/web/src/components/QuoteParts.tsx): `Price` flashes its up/down colour
+  for 600 ms (skipped under reduced motion), `Change` pairs ▲/▼ and spoken text with colour,
+  `Freshness` writes "Live, updated 2 sec. ago", "Rate of Nov 8, 2026", "Live, with the EUR rate of
+  Nov 8, 2026" or "Sample data".
+- [AssetTable.tsx](../../apps/web/src/components/AssetTable.tsx): rows read their own quote, so a
+  price update re-renders one row. Through Docker, nginx upgrades `/hubs/` to a WebSocket.
+
 ## Services and dependencies
 
 | Service | Used for | Where in code | Config / env |
@@ -107,7 +120,7 @@ SignalR uses the same JSON conventions as REST.
 | Key | Default | Where |
 |---|---|---|
 | `Quotes:BroadcastIntervalMs` | 1000 | `appsettings.json` |
-| `RateLimits:PublicPerMinute` | 120 | `appsettings.json` |
+| `RateLimits:PublicPerMinute` | 600 | `appsettings.json` |
 | Hub limits (50 keys, 5 connections, 10 subscribes / 10 s) | constants | `QuotesHub` |
 
 ## Errors and edge cases
@@ -139,3 +152,4 @@ contract (`MARKETLENS_UPDATE_OPENAPI=1 dotnet test`) and the types (`npm run gen
 ## Changelog
 
 - 2026-11-08 — Created (marketlens-v1, M2).
+- 2026-11-08 — Web screens and live store; public rate limit raised from 120 to 600 per minute per IP (M3).

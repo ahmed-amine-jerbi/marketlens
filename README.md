@@ -7,20 +7,20 @@ converts between any two of them, and charts their history, on the web and on a 
 can show a 1–7 day forecast as a shaded range, together with a measured track record of how often
 past forecasts were right. Forecasts are estimates, not financial advice.
 
-> **Status:** in development. The API's market data core works today: live prices for 161
-> currencies, 30 coins and 50 stocks and ETFs (sample data until a Finnhub key is set), conversion
-> between any two, chart history and live updates over SignalR. The web app, forecasts, accounts,
-> alerts and the mobile app follow in that order. This README is updated as each part lands.
+> **Status:** in development. Working today: live prices for 161 currencies, 30 coins and 50 US
+> stocks and index ETFs (clearly marked sample data until a Finnhub key is set), conversion between
+> any two, charts from one day to five years, a watchlist, and the web app in English, French and
+> German with light and dark themes. Forecasts, accounts, alerts, news and the mobile app follow.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/preview-asset-dark.svg">
-  <img alt="Design preview of the Bitcoin page: the price, a three-month chart that hands over to a shaded seven-day forecast range, and a sentence saying how often past forecasts held." src="docs/images/preview-asset-light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/screenshot-home-dark.png">
+  <img alt="The Marketlens home page: a watchlist with Bitcoin, Ethereum, the euro and an S&P 500 ETF, each with its live price, change and freshness, the day's biggest crypto moves, and a converter showing 1 BTC in US dollars." src="docs/images/screenshot-home-light.png">
 </picture>
 
-*Design preview of an asset page, drawn from the app's design tokens. Real screenshots of the web
-and mobile apps replace it as each one is built.* The history line hands over to the forecast: the
-darker band is where the price should land 80% of the time, the lighter one 95%, and the sentence
-under the chart says how often that held in the past.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/screenshot-asset-dark.png">
+  <img alt="The Bitcoin page: the live price with its 24-hour change, a one-month price chart, and the converter." src="docs/images/screenshot-asset-light.png">
+</picture>
 
 ## What v1 will do
 
@@ -58,7 +58,7 @@ More in [docs/architecture.md](docs/architecture.md) and the decision records in
 ## Repository layout
 
 ```text
-apps/web/              web app (arrives with the web milestone)
+apps/web/              web app (React, Vite, Tailwind)
 apps/mobile/           mobile app (arrives with the mobile milestone)
 packages/shared/       design tokens, UI strings, formatting and API types for both apps
 services/api/          ASP.NET Core API and its tests (Marketlens.slnx)
@@ -68,21 +68,32 @@ docs/                  context, architecture, decision records, feature docs, bu
 
 ## Running it locally
 
-Requirements: Docker Desktop, Node.js 24+, the .NET 10 SDK, and [uv](https://docs.astral.sh/uv/)
-for Python.
+Requirements: Docker Desktop. That's all for running it:
 
 ```sh
-docker compose up -d          # PostgreSQL on :5432, Mailpit on :8025
-npm install                   # TypeScript workspaces
+docker compose up --build
+```
 
-cd services/api && dotnet run --project Marketlens.Api          # API on http://localhost:5080
+Open http://localhost:8080. The first start takes a few minutes to build; currency and crypto
+history fills in within a minute or two after that. No API keys are needed. Copy `.env.example` to
+`.env` to add provider keys; every variable is described there.
+
+### Working on the code
+
+Also needs Node.js 24+, the .NET 10 SDK and [uv](https://docs.astral.sh/uv/) for Python.
+
+```sh
+docker compose up -d postgres mailpit   # database and mail catcher only
+npm install
+
+cd services/api && dotnet run --project Marketlens.Api                 # API on http://localhost:5080
+npm run dev -w @marketlens/web                                         # web on http://localhost:5173
 cd services/forecaster && uv run uvicorn forecaster.app:app --port 8001
 ```
 
-No API keys are needed to run it. Copy `.env.example` to `.env` to add provider keys; every
-variable is described there.
+The web dev server proxies `/api` and `/hubs` to the API, as nginx does in Docker.
 
-Try the API once it's running:
+Try the API directly:
 
 ```sh
 curl "localhost:5080/api/v1/conversions?from=crypto:BTC&to=fiat:TND&amount=0.25"
@@ -98,12 +109,20 @@ each feature has a walkthrough in [docs/features/](docs/features/README.md).
 ## Checks
 
 ```sh
-npm run lint && npm run typecheck && npm test                    # TypeScript
+npm run lint && npm run typecheck && npm test                    # TypeScript (web + shared)
 cd services/api && dotnet format --verify-no-changes && dotnet test
 cd services/forecaster && uv run ruff check && uv run mypy && uv run pytest
 ```
 
-CI runs the same commands plus a gitleaks secret scan on every pull request.
+End-to-end and accessibility checks run against the Docker stack:
+
+```sh
+docker compose up -d --build
+npx playwright install chromium        # once
+npm run test:e2e -w @marketlens/web    # main flows + axe scans of every page, light and dark
+```
+
+CI runs the lint, type and unit checks plus a gitleaks secret scan on every pull request.
 
 ## Data sources
 
