@@ -18,8 +18,10 @@ builder.Services.AddDataProtection().SetApplicationName("Marketlens").PersistKey
 builder.Services.AddSingleton(AssetUniverse.Load(AssetUniverse.DefaultPath));
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<QuoteBook>();
+builder.Services.AddSingleton<AssetCatalog>();
+builder.Services.AddHostedService(services => services.GetRequiredService<AssetCatalog>());
+builder.Services.AddSingleton<CandleWriter>();
 
-builder.Services.AddHostedService<AssetCatalogSync>();
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();

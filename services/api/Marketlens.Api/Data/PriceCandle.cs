@@ -52,7 +52,7 @@ internal sealed class PriceCandleConfiguration : IEntityTypeConfiguration<PriceC
         builder.Property(candle => candle.Source).HasMaxLength(32);
     }
 
-    private static string ToColumnValue(CandleInterval interval) => interval switch
+    internal static string ToColumnValue(CandleInterval interval) => interval switch
     {
         CandleInterval.OneMinute => "1m",
         CandleInterval.OneHour => "1h",
