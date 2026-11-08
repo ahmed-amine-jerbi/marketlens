@@ -17,7 +17,14 @@ public sealed class MarketlensApiFactory : WebApplicationFactory<Program>, IAsyn
 {
     private readonly PostgreSqlContainer postgres = new PostgreSqlBuilder("postgres:17.11-alpine").Build();
 
-    public async ValueTask InitializeAsync() => await postgres.StartAsync();
+    public async ValueTask InitializeAsync()
+    {
+        await postgres.StartAsync();
+
+        // Start the host here, once: test classes run in parallel, and building the server lazily
+        // from several of them at the same time would run startup (migrations, catalogue) twice.
+        _ = Server;
+    }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {

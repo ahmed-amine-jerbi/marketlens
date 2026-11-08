@@ -57,7 +57,13 @@ internal sealed class AssetConfiguration : IEntityTypeConfiguration<Asset>
         builder.Property(asset => asset.Name).HasMaxLength(120);
         builder.Property(asset => asset.LogoUrl).HasMaxLength(500);
         builder.Property(asset => asset.Tracks).HasMaxLength(120);
-        builder.ComplexProperty(asset => asset.ProviderRefs, refs => refs.ToJson().HasColumnType("jsonb"));
+        builder.ComplexProperty(asset => asset.ProviderRefs, refs =>
+        {
+            refs.Property(providerRefs => providerRefs.BinanceSymbol).HasMaxLength(24);
+            refs.Property(providerRefs => providerRefs.CoinGeckoId).HasMaxLength(80);
+            refs.Property(providerRefs => providerRefs.FinnhubSymbol).HasMaxLength(24);
+            refs.Property(providerRefs => providerRefs.TwelveDataSymbol).HasMaxLength(24);
+        });
     }
 
     private static AssetClass ParseClass(string name) =>

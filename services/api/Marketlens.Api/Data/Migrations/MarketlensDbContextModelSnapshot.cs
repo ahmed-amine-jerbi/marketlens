@@ -72,17 +72,25 @@ namespace Marketlens.Api.Data.Migrations
                         {
                             b1.IsRequired();
 
-                            b1.Property<string>("BinanceSymbol");
+                            b1.Property<string>("BinanceSymbol")
+                                .HasMaxLength(24)
+                                .HasColumnType("character varying(24)")
+                                .HasColumnName("provider_refs_binance_symbol");
 
-                            b1.Property<string>("CoinGeckoId");
+                            b1.Property<string>("CoinGeckoId")
+                                .HasMaxLength(80)
+                                .HasColumnType("character varying(80)")
+                                .HasColumnName("provider_refs_coin_gecko_id");
 
-                            b1.Property<string>("FinnhubSymbol");
+                            b1.Property<string>("FinnhubSymbol")
+                                .HasMaxLength(24)
+                                .HasColumnType("character varying(24)")
+                                .HasColumnName("provider_refs_finnhub_symbol");
 
-                            b1.Property<string>("TwelveDataSymbol");
-
-                            b1
-                                .ToJson("provider_refs")
-                                .HasColumnType("jsonb");
+                            b1.Property<string>("TwelveDataSymbol")
+                                .HasMaxLength(24)
+                                .HasColumnType("character varying(24)")
+                                .HasColumnName("provider_refs_twelve_data_symbol");
                         });
 
                     b.HasKey("Id")

@@ -24,7 +24,10 @@ namespace Marketlens.Api.Data.Migrations
                     logo_url = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     tracks = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: true),
                     is_active = table.Column<bool>(type: "boolean", nullable: false),
-                    provider_refs = table.Column<string>(type: "jsonb", nullable: false)
+                    provider_refs_binance_symbol = table.Column<string>(type: "character varying(24)", maxLength: 24, nullable: true),
+                    provider_refs_coin_gecko_id = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: true),
+                    provider_refs_finnhub_symbol = table.Column<string>(type: "character varying(24)", maxLength: 24, nullable: true),
+                    provider_refs_twelve_data_symbol = table.Column<string>(type: "character varying(24)", maxLength: 24, nullable: true)
                 },
                 constraints: table =>
                 {
