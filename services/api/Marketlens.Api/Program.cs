@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 
 using Marketlens.Api.Conversions;
 using Marketlens.Api.Data;
+using Marketlens.Api.Forecasts;
 using Marketlens.Api.History;
 using Marketlens.Api.Http;
 using Marketlens.Api.Locale;
@@ -131,6 +132,21 @@ builder.Services.AddHttpClient<TwelveDataClient>((services, http) =>
     .SetHandlerLifetime(Timeout.InfiniteTimeSpan);
 builder.Services.AddHostedService<TwelveDataHistoryBackfill>();
 builder.Services.AddHostedService<SampleStockFeed>();
+
+builder.Services.Configure<ForecastOptions>(forecasts =>
+{
+    builder.Configuration.GetSection(ForecastOptions.Section).Bind(forecasts);
+    if (builder.Configuration["FORECASTER_BASE_URL"] is { Length: > 0 } forecasterBaseUrl)
+    {
+        forecasts.BaseUrl = new Uri(forecasterBaseUrl);
+    }
+});
+builder.Services.AddHttpClient<ForecasterClient>((services, http) =>
+{
+    var forecasts = services.GetRequiredService<IOptions<ForecastOptions>>().Value;
+    http.BaseAddress = forecasts.BaseUrl;
+    http.Timeout = forecasts.RequestTimeout;
+});
 
 builder.Services.AddSingleton<QuoteReader>();
 builder.Services.AddSingleton<HistoryQuery>();

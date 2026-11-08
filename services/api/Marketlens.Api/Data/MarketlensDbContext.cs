@@ -12,6 +12,10 @@ public sealed class MarketlensDbContext(DbContextOptions<MarketlensDbContext> op
 
     public DbSet<QuoteSnapshot> QuoteSnapshots => Set<QuoteSnapshot>();
 
+    public DbSet<Forecast> Forecasts => Set<Forecast>();
+
+    public DbSet<ForecastEvaluation> ForecastEvaluations => Set<ForecastEvaluation>();
+
     /// <summary>The Data Protection key ring, so sign-ins and email links survive container rebuilds (D34).</summary>
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
