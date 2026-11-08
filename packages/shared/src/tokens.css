@@ -1,0 +1,55 @@
+/* Generated from tokens.ts by scripts/generate-tokens-css.ts. Do not edit. */
+:root {
+  color-scheme: light;
+  --ml-color-background: #F5F7FA;
+  --ml-color-surface: #FFFFFF;
+  --ml-color-ink: #17212C;
+  --ml-color-muted-ink: #5A6775;
+  --ml-color-divider: #DCE2E9;
+  --ml-color-accent: #2B55C6;
+  --ml-color-up: #1A7F51;
+  --ml-color-down: #C43D2E;
+  --ml-text-caption: 0.75rem;
+  --ml-text-small: 0.875rem;
+  --ml-text-body: 1rem;
+  --ml-text-title: 1.25rem;
+  --ml-text-heading: 1.5625rem;
+  --ml-text-display: 2rem;
+  --ml-text-hero: 2.5rem;
+  --ml-space-xxs: 0.25rem;
+  --ml-space-xs: 0.5rem;
+  --ml-space-sm: 0.75rem;
+  --ml-space-md: 1rem;
+  --ml-space-lg: 1.5rem;
+  --ml-space-xl: 2rem;
+  --ml-space-xxl: 3rem;
+  --ml-space-xxxl: 4rem;
+  --ml-radius-control: 0.375rem;
+  --ml-radius-panel: 0.625rem;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ml-color-background: #0E141B;
+  --ml-color-surface: #151D26;
+  --ml-color-ink: #E4E9EF;
+  --ml-color-muted-ink: #94A2B0;
+  --ml-color-divider: #263241;
+  --ml-color-accent: #86A3FF;
+  --ml-color-up: #41BE86;
+  --ml-color-down: #F1735F;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --ml-color-background: #0E141B;
+    --ml-color-surface: #151D26;
+    --ml-color-ink: #E4E9EF;
+    --ml-color-muted-ink: #94A2B0;
+    --ml-color-divider: #263241;
+    --ml-color-accent: #86A3FF;
+    --ml-color-up: #41BE86;
+    --ml-color-down: #F1735F;
+  }
+}

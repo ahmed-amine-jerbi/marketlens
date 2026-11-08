@@ -32,6 +32,10 @@ jobs:
         run: |
           npm run generate:api
           git diff --exit-code packages/shared/src/api/schema.ts
+      - name: Generated token CSS matches tokens.ts
+        run: |
+          npm run generate:tokens
+          git diff --exit-code packages/shared/src/tokens.css
 
   api:
     name: API (.NET format, build, test)

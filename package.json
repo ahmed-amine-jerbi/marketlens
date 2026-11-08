@@ -17,7 +17,8 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "lint:api": "redocly lint services/api/openapi/v1.json",
-    "generate:api": "npm run generate:api -w @marketlens/shared"
+    "generate:api": "npm run generate:api -w @marketlens/shared",
+    "generate:tokens": "npm run generate:tokens -w @marketlens/shared"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

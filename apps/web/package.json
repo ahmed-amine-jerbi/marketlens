@@ -1,0 +1,40 @@
+{
+  "name": "@marketlens/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Marketlens web app: live prices, conversions and charts.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fontsource-variable/ibm-plex-sans": "5.3.0",
+    "@marketlens/shared": "*",
+    "@microsoft/signalr": "10.0.11",
+    "@tanstack/react-query": "5.107.1",
+    "i18next": "27.0.1",
+    "lucide-react": "1.70.0",
+    "openapi-fetch": "0.17.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-i18next": "18.0.0",
+    "react-router": "8.5.1",
+    "recharts": "3.10.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.3.5",
+    "@testing-library/react": "16.3.3",
+    "@types/node": "26.6.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.2.1",
+    "jsdom": "31.0.0",
+    "tailwindcss": "4.3.5",
+    "vite": "8.3.6"
+  }
+}

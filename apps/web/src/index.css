@@ -1,0 +1,47 @@
+@import "tailwindcss";
+@import "@fontsource-variable/ibm-plex-sans";
+@import "@marketlens/shared/tokens.css";
+
+/* Tailwind utilities read the shared design tokens (packages/shared/src/tokens.ts). */
+@theme inline {
+  --font-sans: "IBM Plex Sans Variable", "IBM Plex Sans", system-ui, sans-serif;
+
+  --color-background: var(--ml-color-background);
+  --color-surface: var(--ml-color-surface);
+  --color-ink: var(--ml-color-ink);
+  --color-muted: var(--ml-color-muted-ink);
+  --color-divider: var(--ml-color-divider);
+  --color-accent: var(--ml-color-accent);
+  --color-up: var(--ml-color-up);
+  --color-down: var(--ml-color-down);
+
+  --text-caption: var(--ml-text-caption);
+  --text-small: var(--ml-text-small);
+  --text-body: var(--ml-text-body);
+  --text-title: var(--ml-text-title);
+  --text-heading: var(--ml-text-heading);
+  --text-display: var(--ml-text-display);
+  --text-hero: var(--ml-text-hero);
+
+  --radius-control: var(--ml-radius-control);
+  --radius-panel: var(--ml-radius-panel);
+}
+
+@layer base {
+  html {
+    background-color: var(--ml-color-background);
+    color: var(--ml-color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Prices keep their width as digits change, so a live update never makes a row jump. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ml-color-accent);
+    outline-offset: 2px;
+  }
+}

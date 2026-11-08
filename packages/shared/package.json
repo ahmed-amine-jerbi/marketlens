@@ -7,14 +7,17 @@
   "type": "module",
   "exports": {
     "./tokens": "./src/tokens.ts",
+    "./tokens.css": "./src/tokens.css",
     "./api": "./src/api/schema.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "generate:api": "openapi-typescript ../../services/api/openapi/v1.json --output src/api/schema.ts"
+    "generate:api": "openapi-typescript ../../services/api/openapi/v1.json --output src/api/schema.ts",
+    "generate:tokens": "node scripts/generate-tokens-css.ts"
   },
   "devDependencies": {
-    "openapi-typescript": "7.13.0"
+    "openapi-typescript": "7.13.0",
+    "@types/node": "26.6.6"
   }
 }
