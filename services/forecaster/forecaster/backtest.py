@@ -44,8 +44,8 @@ def choose_model(candidates: Sequence[ModelScore], baseline: ModelScore) -> tupl
     """Picks the lowest-error candidate, but only if it is strictly better than "no change".
 
     Returns the chosen score and whether it beats the baseline. When no candidate beats it, the
-    baseline itself is chosen, so the caller never shows a forecast that history says is worse
-    than assuming the price stays where it is.
+    baseline itself is chosen: the range is then centred on the last close, and the app says the
+    models were no better than assuming the price stays where it is (D57).
     """
     if not candidates:
         return baseline, False
