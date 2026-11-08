@@ -118,16 +118,22 @@ public sealed class QuotesHub(AssetCatalog catalog, QuoteReader quotes, QuoteSub
             throw new HubException("'in' must be a tracked asset key such as fiat:EUR.");
         }
 
+        // Validate everything before changing anything: this connection's set and the shared watcher
+        // counts must move together, or an unsubscribe could later decrement another client's count.
+        var assets = ParseTrackedKeys(keys).ToList();
         var watched = Subscriptions();
-        var requested = ParseTrackedKeys(keys).Select(asset => new QuoteSubscription(asset, displayIn)).Where(watched.Add).ToList();
-        if (watched.Count > MaxKeysPerConnection)
+        var requested = assets
+            .Select(asset => new QuoteSubscription(asset, displayIn))
+            .Where(subscription => !watched.Contains(subscription))
+            .ToList();
+        if (watched.Count + requested.Count > MaxKeysPerConnection)
         {
-            watched.ExceptWith(requested);
             throw new HubException($"A connection can watch at most {MaxKeysPerConnection} assets.");
         }
 
         foreach (var subscription in requested)
         {
+            watched.Add(subscription);
             subscriptions.Watch(subscription);
             await Groups.AddToGroupAsync(Context.ConnectionId, subscription.GroupName);
         }

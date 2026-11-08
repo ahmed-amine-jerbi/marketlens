@@ -6,10 +6,15 @@
   "license": "MIT",
   "type": "module",
   "exports": {
-    "./tokens": "./src/tokens.ts"
+    "./tokens": "./src/tokens.ts",
+    "./api": "./src/api/schema.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "generate:api": "openapi-typescript ../../services/api/openapi/v1.json --output src/api/schema.ts"
+  },
+  "devDependencies": {
+    "openapi-typescript": "7.13.0"
   }
 }

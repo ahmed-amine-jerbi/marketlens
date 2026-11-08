@@ -23,10 +23,13 @@ public static class QuoteEndpoints
 
     public static RouteGroupBuilder MapQuoteEndpoints(this RouteGroupBuilder api)
     {
-        api.MapGet("/assets", ListAssets).WithName("ListAssets").WithTags("Assets");
+        api.MapGet("/assets", ListAssets).WithName("ListAssets").WithTags("Assets")
+            .WithSummary("List tracked assets, filtered by class or text, in pages ordered by key");
         api.MapGet("/assets/{key}", GetAsset).WithName("GetAsset").WithTags("Assets")
+            .WithSummary("Get one asset with its latest quote in a display currency")
             .ProducesProblem(StatusCodes.Status404NotFound);
         api.MapGet("/quotes", GetQuotes).WithName("GetQuotes").WithTags("Quotes")
+            .WithSummary("Get the latest quotes of up to 50 assets in one display currency")
             .ProducesProblem(StatusCodes.Status404NotFound);
         return api;
     }

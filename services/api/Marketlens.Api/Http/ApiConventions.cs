@@ -42,11 +42,37 @@ public static class ApiConventions
     {
         services.ConfigureHttpJsonOptions(json => ConfigureJson(json.SerializerOptions));
         services.AddProblemDetails();
-        services.AddOpenApi(openApi => openApi.AddSchemaTransformer((schema, context, _) =>
+        services.AddOpenApi(openApi =>
         {
-            DescribeAsText(schema, context.JsonTypeInfo.Type);
-            return Task.CompletedTask;
-        }));
+            openApi.AddDocumentTransformer((document, _, _) =>
+            {
+                document.Info = new OpenApiInfo
+                {
+                    Title = "Marketlens API",
+                    Version = "v1",
+                    Description = "Live currency, crypto, stock and ETF prices, conversions between any two assets, and chart history. Prices are decimal strings; errors are RFC 9457 problem details with urn:marketlens:problem:* types.",
+                    License = new OpenApiLicense { Name = "MIT", Identifier = "MIT" },
+                };
+
+                // Relative to wherever the API is served; clients use their own base URL.
+                document.Servers = [new OpenApiServer { Url = "/" }];
+                document.Tags = new HashSet<OpenApiTag>
+                {
+                    new() { Name = "Assets", Description = "The currencies, coins, stocks and ETFs Marketlens tracks." },
+                    new() { Name = "Quotes", Description = "Latest prices in any display currency." },
+                    new() { Name = "Conversions", Description = "Amounts converted between any two assets." },
+                    new() { Name = "History", Description = "Chart history, converted point by point." },
+                    new() { Name = "Status", Description = "Freshness of each data source." },
+                    new() { Name = "Locale", Description = "Language and currency suggestions for new visitors." },
+                };
+                return Task.CompletedTask;
+            });
+            openApi.AddSchemaTransformer((schema, context, _) =>
+            {
+                DescribeAsText(schema, context.JsonTypeInfo.Type);
+                return Task.CompletedTask;
+            });
+        });
 
         services.Configure<RateLimitOptions>(configuration.GetSection(RateLimitOptions.Section));
         services.AddRateLimiter(limiter =>

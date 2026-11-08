@@ -12,8 +12,10 @@ public static class HistoryEndpoints
     public static RouteGroupBuilder MapHistoryEndpoints(this RouteGroupBuilder api)
     {
         api.MapGet("/assets/{key}/history", GetAssetHistory).WithName("GetAssetHistory").WithTags("History")
+            .WithSummary("Get an asset's price history for a chart range in a display currency")
             .ProducesProblem(StatusCodes.Status404NotFound);
         api.MapGet("/conversions/history", GetConversionHistory).WithName("GetConversionHistory").WithTags("History")
+            .WithSummary("Get the rate between two assets over a chart range")
             .ProducesProblem(StatusCodes.Status404NotFound);
         return api;
     }

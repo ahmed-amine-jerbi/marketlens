@@ -49,7 +49,8 @@ public static class LocaleSuggester
     public static RouteGroupBuilder MapLocaleEndpoints(this RouteGroupBuilder api)
     {
         api.MapGet("/locale-suggestion", (HttpRequest request) => Suggest(request.Headers.AcceptLanguage.ToString()))
-            .WithName("GetLocaleSuggestion").WithTags("Locale");
+            .WithName("GetLocaleSuggestion").WithTags("Locale")
+            .WithSummary("Suggest a language and display currency for a visitor who has not chosen");
         return api;
     }
 

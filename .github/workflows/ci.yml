@@ -26,6 +26,12 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      - name: API contract lints clean
+        run: npm run lint:api
+      - name: Generated API types match the committed contract
+        run: |
+          npm run generate:api
+          git diff --exit-code packages/shared/src/api/schema.ts
 
   api:
     name: API (.NET format, build, test)
@@ -40,6 +46,7 @@ jobs:
           global-json-file: services/api/global.json
       - run: dotnet format --verify-no-changes
       - run: dotnet build --configuration Release
+      # Includes OpenApiContractTests: the committed services/api/openapi/v1.json must match the API.
       - run: dotnet test --configuration Release --no-build
 
   forecaster:

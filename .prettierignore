@@ -2,6 +2,9 @@
 *.md
 .claude/
 
+# Recorded provider responses stay byte-for-byte as received.
+docs/pipeline/*/raw/
+
 # Formatted by their own toolchains (dotnet format, Ruff).
 services/
 

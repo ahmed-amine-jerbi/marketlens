@@ -32,6 +32,7 @@ public static class ConversionEndpoints
     public static RouteGroupBuilder MapConversionEndpoints(this RouteGroupBuilder api)
     {
         api.MapGet("/conversions", Convert).WithName("Convert").WithTags("Conversions")
+            .WithSummary("Convert an amount between any two tracked assets")
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
         return api;

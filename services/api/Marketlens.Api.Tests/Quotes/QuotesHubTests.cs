@@ -18,6 +18,8 @@ public sealed class QuotesHubTests(MarketlensApiFactory factory)
     private static readonly string[] EuroOnly = ["fiat:EUR"];
     private static readonly string[] SolanaOnly = ["crypto:SOL"];
     private static readonly string[] UnknownCoin = ["crypto:NOTACOIN"];
+    private static readonly string[] BitcoinCashOnly = ["crypto:BCH"];
+    private static readonly string[] BitcoinCashAndUnknown = ["crypto:BCH", "crypto:NOTACOIN"];
 
     [Fact]
     public async Task Subscribe_answers_with_current_quotes_in_the_display_currency()
@@ -75,6 +77,22 @@ public sealed class QuotesHubTests(MarketlensApiFactory factory)
             connection.InvokeAsync<List<QuoteResponse>>("Subscribe", UnknownCoin, null, TestContext.Current.CancellationToken));
 
         Assert.Contains("crypto:NOTACOIN", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_refused_subscribe_changes_nothing_so_it_cannot_unwatch_another_clients_asset()
+    {
+        var subscriptions = factory.Services.GetRequiredService<QuoteSubscriptions>();
+        var bitcoinCashInUsd = new QuoteSubscription(AssetKey.Parse("crypto:BCH"), AssetKey.UsDollar);
+        await using var watcher = await ConnectAsync();
+        await using var other = await ConnectAsync();
+        await watcher.InvokeAsync<List<QuoteResponse>>("Subscribe", BitcoinCashOnly, null, TestContext.Current.CancellationToken);
+
+        await Assert.ThrowsAsync<HubException>(() =>
+            other.InvokeAsync<List<QuoteResponse>>("Subscribe", BitcoinCashAndUnknown, null, TestContext.Current.CancellationToken));
+        await other.InvokeAsync("Unsubscribe", BitcoinCashOnly, TestContext.Current.CancellationToken);
+
+        Assert.Contains(bitcoinCashInUsd, subscriptions.Active);
     }
 
     [Fact]

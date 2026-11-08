@@ -17,7 +17,8 @@ public static class StatusEndpoints
 {
     public static RouteGroupBuilder MapStatusEndpoints(this RouteGroupBuilder api)
     {
-        api.MapGet("/status", GetStatus).WithName("GetStatus").WithTags("Status");
+        api.MapGet("/status", GetStatus).WithName("GetStatus").WithTags("Status")
+            .WithSummary("Show how current each data source is");
         return api;
     }
 

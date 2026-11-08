@@ -1,0 +1,7 @@
+# Lints the committed API contract: npx @redocly/cli lint services/api/openapi/v1.json
+extends:
+  - recommended
+rules:
+  # v1 endpoints are public on purpose (D7: browsing needs no account). Turn this back on in M5,
+  # when sign-in adds security schemes to the /me endpoints.
+  security-defined: off
