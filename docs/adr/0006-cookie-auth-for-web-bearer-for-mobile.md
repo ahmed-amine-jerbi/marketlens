@@ -1,8 +1,6 @@
 # 0006 — Cookie sign-in for web, bearer tokens for mobile
 
 - **Status:** accepted, 2026-11-08
-- **Decision records:** D7, D18, D30 in [decisions.md](../pipeline/marketlens-v1/decisions.md)
-  and [the plan](../pipeline/marketlens-v1/plan.md)
 
 ## Context
 

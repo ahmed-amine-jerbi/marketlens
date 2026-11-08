@@ -1,8 +1,6 @@
 # 0004 — One adapter per data provider, USD as the pivot
 
 - **Status:** accepted, 2026-11-08
-- **Decision records:** D5, D26, D27, D28, D36 in [decisions.md](../pipeline/marketlens-v1/decisions.md)
-  and [the plan](../pipeline/marketlens-v1/plan.md)
 
 ## Context
 

@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" font-family="'IBM Plex Sans', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-labelledby="title">
-  <title id="title">Marketlens: live prices, any conversion, honest forecasts</title>
+  <title id="title">Marketlens: live prices, any conversion, clear charts</title>
   <rect width="1200" height="300" rx="20" fill="#0E141B"/>
   <text x="64" y="132" font-size="56" font-weight="600" fill="#E4E9EF" letter-spacing="-1">Marketlens</text>
-  <text x="66" y="180" font-size="22" fill="#94A2B0">Live prices, any conversion, honest forecasts.</text>
+  <text x="66" y="180" font-size="22" fill="#94A2B0">Live prices, any conversion, clear charts.</text>
   <text x="66" y="226" font-size="14" fill="#94A2B0">Currencies · Crypto · US stocks · Index ETFs  —  web and mobile, open source</text>
   <path d="M960,188.4 C1040,160.4 1090,88.4 1150,84.4 L1150,224.4 C1090,228.4 1040,216.4 960,188.4 Z" fill="#86A3FF" fill-opacity="0.14"/>
   <path d="M960,188.4 C1040,173.2 1090,120.4 1150,116.4 L1150,192.4 C1090,196.4 1040,203.6 960,188.4 Z" fill="#86A3FF" fill-opacity="0.3"/>

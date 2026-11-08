@@ -1,3 +1,5 @@
 {
-  "MD033": { "allowed_elements": ["picture", "source", "img"] }
+  "MD013": { "line_length": 100, "tables": false, "code_blocks": false },
+  "MD033": { "allowed_elements": ["picture", "source", "img"] },
+  "MD060": false
 }

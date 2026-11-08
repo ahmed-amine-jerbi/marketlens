@@ -1,7 +1,6 @@
 # 0003 — PostgreSQL as the only store in v1
 
 - **Status:** accepted, 2026-11-08
-- **Decision record:** D25 in [the plan](../pipeline/marketlens-v1/plan.md)
 
 ## Context
 

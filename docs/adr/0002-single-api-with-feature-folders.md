@@ -1,7 +1,6 @@
 # 0002 — One API project organised by feature folders
 
 - **Status:** accepted, 2026-11-08
-- **Decision record:** D23 in [the plan](../pipeline/marketlens-v1/plan.md)
 
 ## Context
 

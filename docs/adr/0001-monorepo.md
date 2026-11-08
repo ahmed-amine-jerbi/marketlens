@@ -1,7 +1,6 @@
 # 0001 — One repository for every part
 
 - **Status:** accepted, 2026-11-08
-- **Decision record:** D33 in [the plan](../pipeline/marketlens-v1/plan.md)
 
 ## Context
 

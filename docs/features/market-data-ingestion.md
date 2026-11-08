@@ -135,7 +135,7 @@ flowchart LR
 | PostgreSQL | assets, candles, snapshots | `Data/`, `CandleWriter`, `QuoteSnapshots` | `DATABASE_URL` |
 
 Free-plan terms (display, redistribution, attribution) are summarised in
-[provider-terms.md](../pipeline/marketlens-v1/raw/provider-terms.md); a public demo needs a
+[provider-terms.md](../provider-terms.md); a public demo needs a
 separate decision (D45).
 
 ## Data

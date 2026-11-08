@@ -1,8 +1,6 @@
 # 0005 — A stateless Python forecaster called by the API
 
 - **Status:** accepted, 2026-11-08
-- **Decision records:** D1, D9, D29 in [decisions.md](../pipeline/marketlens-v1/decisions.md)
-  and [the plan](../pipeline/marketlens-v1/plan.md)
 
 ## Context
 

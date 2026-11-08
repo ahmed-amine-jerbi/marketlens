@@ -1,7 +1,7 @@
 # Marketlens — context
 
 Short, current facts for anyone opening the project cold. History lives in the decisions log
-below and in [pipeline/marketlens-v1/](pipeline/marketlens-v1/).
+below and in the architecture decision records ([adr/](adr/)).
 
 ## 1. Purpose
 
@@ -46,7 +46,7 @@ apps/web/  apps/mobile/       clients (display + format only)
 packages/shared/              tokens, i18n, format.ts, generated API types
 services/api/                 Marketlens.Api (feature folders) + Marketlens.Api.Tests
 services/forecaster/          forecaster/ (FastAPI app) + tests/
-docs/                         this file, architecture.md, adr/, features/, pipeline/
+docs/                         this file, architecture.md, adr/, features/, api/
 ```
 
 ## 5. Features index
@@ -131,8 +131,8 @@ Visual design section.
 
 ## 10. Decisions log
 
-Decisions D1–D42 with reasons: [pipeline/marketlens-v1/decisions.md](pipeline/marketlens-v1/decisions.md)
-and the plan's Decisions section. Architecture decisions: [adr/](adr/).
+Architecture decisions with their reasons and rejected alternatives: [adr/](adr/). Other dated
+decisions:
 
 - 2026-11-08 TypeScript pinned to 6.0.3, not 7.0, because typescript-eslint 8.72 supports `<6.1`.
 - 2026-11-08 Light-theme "up" green `#1A7F51` (plan had `#1C8656`, which failed WCAG AA on the
@@ -183,5 +183,5 @@ and the plan's Decisions section. Architecture decisions: [adr/](adr/).
 
 - Public demo: Finnhub and Twelve Data free plans forbid public display / redistribution, Binance
   forbids commercial relays, and sources disagree on Binance attribution (D45,
-  [provider-terms.md](pipeline/marketlens-v1/raw/provider-terms.md)). Decide before any demo.
+  [provider-terms.md](provider-terms.md)). Decide before any demo.
 - IP-country lookup (GeoLite2, P4) needs a MaxMind key and account id (D47, M3).
