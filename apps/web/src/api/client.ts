@@ -7,6 +7,7 @@ export type Quote = components["schemas"]["QuoteResponse"];
 export type Freshness = components["schemas"]["Freshness"];
 export type Conversion = components["schemas"]["ConversionResponse"];
 export type History = components["schemas"]["HistoryResponse"];
+export type Forecast = components["schemas"]["ForecastResponse"];
 export type Status = components["schemas"]["StatusResponse"];
 export type LocaleSuggestion = components["schemas"]["LocaleSuggestion"];
 

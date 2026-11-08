@@ -119,7 +119,8 @@
     "stocks": "US stock and ETF prices from Finnhub, history from Twelve Data. Without API keys the app shows clearly marked sample data instead.",
     "conversions": "A conversion divides the US-dollar prices of the two assets, so it is only as current as the slower of the two.",
     "disclaimerTitle": "Not financial advice",
-    "disclaimer": "Marketlens shows prices for information only. They can be delayed or wrong, and nothing here is a recommendation to buy or sell anything."
+    "disclaimer": "Marketlens shows prices for information only. They can be delayed or wrong, and nothing here is a recommendation to buy or sell anything.",
+    "forecasts": "Forecast ranges are computed by Marketlens from these prices."
   },
   "errors": {
     "loadFailed": "This didn't load. Check your connection and try again.",
@@ -128,5 +129,42 @@
     "backHome": "Back to the home page",
     "unexpected": "Something broke on this page. Reload to try again.",
     "tooManyRequests": "Too many requests from your network. Wait a minute and try again."
+  },
+  "forecast": {
+    "show": "Show forecast",
+    "onlyOnRanges": "The forecast range is drawn on the 1 week, 1 month and 3 month charts.",
+    "sourceBacktest": "Tested on the last {{weeks}} weeks of past prices",
+    "sourceLive": "Over the last {{weeks}} weeks of our published forecasts",
+    "beats": "{{source}}: the real price stayed inside the shaded range {{coverage}} of the time, and a typical miss was {{error}}, against {{baselineError}} for assuming the price stays where it is.",
+    "notBetter": "{{source}}: our models did no better than assuming the price stays where it is (a typical miss of {{error}} against {{baselineError}}), so the range is centred on today’s price. The real price stayed inside it {{coverage}} of the time.",
+    "aboutTheSame": "{{source}}: our model did about as well as assuming the price stays where it is (a typical miss of {{error}} against {{baselineError}}). The real price stayed inside the shaded range {{coverage}} of the time.",
+    "made": "Forecast made {{date}}.",
+    "notAdvice": "Forecasts are estimates, not financial advice.",
+    "howItWorks": "How this works",
+    "pending": "The forecast is being prepared and appears within a few minutes.",
+    "insufficient": "No forecast for {{name}} yet: forecasts need two years of daily prices.",
+    "loadFailed": "The forecast couldn’t be loaded.",
+    "legend80": "80% range",
+    "legend95": "95% range",
+    "legendMedian": "Middle estimate",
+    "tooltipMedian": "Middle estimate: {{price}}",
+    "tooltipRange": "80% range: {{low}} to {{high}}",
+    "chartSummary": "Forecast for {{date}}: {{low}} to {{high}} {{currency}} (80% range)."
+  },
+  "forecastMethod": {
+    "title": "How forecasts work",
+    "intro": "Asset pages show where a price is likely to be over the next seven days. It is a range, not a single predicted price, and it comes with a record of how often past ranges were right.",
+    "rangeTitle": "What the shaded range means",
+    "range": "The darker band is the 80% range: when the forecasts are well calibrated, the real price ends up inside it about 8 days in 10. The lighter band is the 95% range. The dashed line is the middle estimate, as likely to be too high as too low.",
+    "madeTitle": "How it is made",
+    "made": "Once a day, after the daily close, Marketlens takes the last two years of daily closing prices and fits three standard statistical models from the open-source statsforecast library: exponential smoothing, Theta and ARIMA. Crypto is forecast day by day; stocks, funds and currencies by trading day.",
+    "chosenTitle": "How a model is chosen",
+    "chosen": "Each model is tested on the last eight weeks: it forecasts each week from the prices before it, and its forecasts are compared with what happened. The simplest guess, that the price stays where it is, is tested the same way. The model with the smallest typical miss is used. When no model beats the simple guess, the page says so and the range is centred on today’s price.",
+    "recordTitle": "How the record is measured",
+    "record": "Under each chart, one sentence says how often the real price stayed inside the 80% range and how large a typical miss was, next to the simple guess. Until Marketlens has checked at least 20 of its own forecast days for an asset, the record comes from the eight-week test on past prices; after that it comes from its published forecasts.",
+    "limitsTitle": "What it can’t do",
+    "limits": "The models only see past prices. They know nothing about news, earnings, regulation or a sudden crash, and a range can be wrong exactly when it matters most. Forecasts are made in US dollars; in another display currency they are converted at that currency’s latest rate. Without API keys, stock and fund forecasts are made from sample data.",
+    "adviceTitle": "Not financial advice",
+    "advice": "Forecasts are estimates for information only. Nothing here is a recommendation to buy or sell anything."
   }
 }

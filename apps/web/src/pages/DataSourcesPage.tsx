@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router";
 
 const providers = [
   { name: "Frankfurter", href: "https://frankfurter.dev", text: "dataSources.fiat" },
@@ -35,6 +36,12 @@ export function DataSourcesPage() {
       </dl>
 
       <p className="mt-6 text-small text-muted">{t("dataSources.conversions")}</p>
+      <p className="mt-2 text-small text-muted">
+        {t("dataSources.forecasts")}{" "}
+        <Link to="/how-forecasts-work" className="text-accent underline underline-offset-4">
+          {t("forecast.howItWorks")}
+        </Link>
+      </p>
 
       <section aria-labelledby="disclaimer-title" className="mt-10 border-t border-divider pt-6">
         <h2 id="disclaimer-title" className="text-title font-semibold">

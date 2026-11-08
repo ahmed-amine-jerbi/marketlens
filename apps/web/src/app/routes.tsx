@@ -33,6 +33,12 @@ export const router = createBrowserRouter([
         }),
       },
       {
+        path: "how-forecasts-work",
+        lazy: async () => ({
+          Component: (await import("../pages/ForecastMethodPage")).ForecastMethodPage,
+        }),
+      },
+      {
         path: "*",
         lazy: async () => ({ Component: (await import("../pages/NotFoundPage")).NotFoundPage }),
       },

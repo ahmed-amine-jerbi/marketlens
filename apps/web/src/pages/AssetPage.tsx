@@ -4,15 +4,19 @@ import { Link, useParams } from "react-router";
 
 import { ApiProblemError } from "../api/client";
 import { useLiveQuotes, useQuote } from "../api/liveQuotes";
-import { chartRanges, useAsset, type ChartRange } from "../api/queries";
+import { chartRanges, useAsset, useForecast, type ChartRange } from "../api/queries";
 import { WatchToggle } from "../components/AssetTable";
-import { PriceChart } from "../components/PriceChart";
+import { forecastRanges, PriceChart } from "../components/PriceChart";
 import { Change, Freshness, Price } from "../components/QuoteParts";
 import { LoadError } from "../components/States";
 import { ConverterPanel } from "../conversions/ConverterPanel";
+import { ForecastNote } from "../forecasts/ForecastNote";
 import { useSettings } from "../settings/Settings";
 
-/** One asset: its live price in the display currency, its change, its chart and a converter. */
+/**
+ * One asset: its live price in the display currency, its change, its chart with the forecast range
+ * and its track record, and a converter.
+ */
 export function AssetPage() {
   const { key = "" } = useParams();
   const { t } = useTranslation();
@@ -25,7 +29,9 @@ export function AssetPage() {
         ? "fiat:EUR"
         : "fiat:USD";
   const [range, setRange] = useState<ChartRange>("1M");
+  const [isForecastShown, setIsForecastShown] = useState(true);
   const detail = useAsset(key, displayCurrency);
+  const forecast = useForecast(key, displayCurrency);
   useLiveQuotes(detail.isSuccess ? [key] : [], displayCurrency);
   const quote = useQuote(key, displayCurrency);
 
@@ -55,6 +61,11 @@ export function AssetPage() {
   }
 
   const { asset } = detail.data;
+  const isRangeDrawn = forecastRanges.includes(range);
+  const forecastPoints =
+    isForecastShown && isRangeDrawn && forecast.data?.status === "available"
+      ? forecast.data.points
+      : [];
   return (
     <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_22rem]">
       <article className="min-w-0">
@@ -89,31 +100,52 @@ export function AssetPage() {
           <p className="mt-4 text-small text-muted">{t("asset.noPriceYet")}</p>
         )}
 
-        <div
-          role="radiogroup"
-          aria-label={t("asset.chartLabel", {
-            name: asset.name,
-            range: t(`asset.ranges.${range}`),
-          })}
-          className="mt-6 flex flex-wrap gap-1"
-        >
-          {chartRanges.map((candidate) => (
-            <button
-              key={candidate}
-              type="button"
-              role="radio"
-              aria-checked={candidate === range}
-              aria-label={t(`asset.ranges.${candidate}`)}
-              onClick={() => {
-                setRange(candidate);
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+          <div
+            role="radiogroup"
+            aria-label={t("asset.chartLabel", {
+              name: asset.name,
+              range: t(`asset.ranges.${range}`),
+            })}
+            className="flex flex-wrap gap-1"
+          >
+            {chartRanges.map((candidate) => (
+              <button
+                key={candidate}
+                type="button"
+                role="radio"
+                aria-checked={candidate === range}
+                aria-label={t(`asset.ranges.${candidate}`)}
+                onClick={() => {
+                  setRange(candidate);
+                }}
+                className={`min-w-11 rounded-control border px-3 py-1.5 text-small ${candidate === range ? "border-accent bg-accent font-semibold text-surface" : "border-divider hover:bg-surface"}`}
+              >
+                {candidate}
+              </button>
+            ))}
+          </div>
+          <label className="flex min-h-11 items-center gap-2 text-small">
+            <input
+              type="checkbox"
+              checked={isForecastShown}
+              onChange={(event) => {
+                setIsForecastShown(event.target.checked);
               }}
-              className={`min-w-11 rounded-control border px-3 py-1.5 text-small ${candidate === range ? "border-accent bg-accent font-semibold text-surface" : "border-divider hover:bg-surface"}`}
-            >
-              {candidate}
-            </button>
-          ))}
+              className="size-4 accent-accent"
+            />
+            {t("forecast.show")}
+          </label>
         </div>
-        <PriceChart asset={asset} range={range} displayIn={displayCurrency} />
+        <PriceChart
+          asset={asset}
+          range={range}
+          displayIn={displayCurrency}
+          forecastPoints={forecastPoints}
+        />
+        {isForecastShown && (
+          <ForecastNote forecast={forecast} assetName={asset.name} isRangeDrawn={isRangeDrawn} />
+        )}
       </article>
 
       <aside className="min-w-0">

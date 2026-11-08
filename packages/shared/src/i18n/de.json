@@ -119,7 +119,8 @@
     "stocks": "Preise für US-Aktien und ETFs von Finnhub, Verlauf von Twelve Data. Ohne API-Schlüssel zeigt die App deutlich gekennzeichnete Beispieldaten.",
     "conversions": "Eine Umrechnung teilt die Dollarpreise der beiden Werte und ist daher nur so aktuell wie der langsamere der beiden.",
     "disclaimerTitle": "Keine Anlageberatung",
-    "disclaimer": "Marketlens zeigt Preise nur zur Information. Sie können verzögert oder falsch sein, und nichts hier ist eine Empfehlung zum Kauf oder Verkauf."
+    "disclaimer": "Marketlens zeigt Preise nur zur Information. Sie können verzögert oder falsch sein, und nichts hier ist eine Empfehlung zum Kauf oder Verkauf.",
+    "forecasts": "Die Prognosespannen berechnet Marketlens aus diesen Kursen."
   },
   "errors": {
     "loadFailed": "Das hat nicht geladen. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
@@ -128,5 +129,42 @@
     "backHome": "Zur Startseite",
     "unexpected": "Auf dieser Seite ist ein Fehler aufgetreten. Laden Sie sie neu.",
     "tooManyRequests": "Zu viele Anfragen aus Ihrem Netzwerk. Warten Sie eine Minute und versuchen Sie es erneut."
+  },
+  "forecast": {
+    "show": "Prognose anzeigen",
+    "onlyOnRanges": "Die Prognosespanne erscheint in den Diagrammen für 1 Woche, 1 Monat und 3 Monate.",
+    "sourceBacktest": "Getestet an den Kursen der letzten {{weeks}} Wochen",
+    "sourceLive": "In den letzten {{weeks}} Wochen unserer veröffentlichten Prognosen",
+    "beats": "{{source}}: Der tatsächliche Kurs lag in {{coverage}} der Fälle innerhalb der schattierten Spanne, und die typische Abweichung betrug {{error}}, gegenüber {{baselineError}} bei der Annahme, dass der Kurs gleich bleibt.",
+    "notBetter": "{{source}}: Unsere Modelle waren nicht besser als die Annahme, dass der Kurs gleich bleibt (typische Abweichung {{error}} gegenüber {{baselineError}}), deshalb liegt die Spanne um den heutigen Kurs. Der tatsächliche Kurs lag in {{coverage}} der Fälle darin.",
+    "aboutTheSame": "{{source}}: Unser Modell war etwa so gut wie die Annahme, dass der Kurs gleich bleibt (typische Abweichung {{error}} gegenüber {{baselineError}}). Der tatsächliche Kurs lag in {{coverage}} der Fälle innerhalb der schattierten Spanne.",
+    "made": "Prognose vom {{date}}.",
+    "notAdvice": "Prognosen sind Schätzungen, keine Finanzberatung.",
+    "howItWorks": "So funktioniert es",
+    "pending": "Die Prognose wird vorbereitet und erscheint in wenigen Minuten.",
+    "insufficient": "Noch keine Prognose für {{name}}: Dafür sind zwei Jahre tägliche Kurse nötig.",
+    "loadFailed": "Die Prognose konnte nicht geladen werden.",
+    "legend80": "80-%-Spanne",
+    "legend95": "95-%-Spanne",
+    "legendMedian": "Mittlere Schätzung",
+    "tooltipMedian": "Mittlere Schätzung: {{price}}",
+    "tooltipRange": "80-%-Spanne: {{low}} bis {{high}}",
+    "chartSummary": "Prognose für {{date}}: {{low}} bis {{high}} {{currency}} (80-%-Spanne)."
+  },
+  "forecastMethod": {
+    "title": "So funktionieren Prognosen",
+    "intro": "Die Seiten der einzelnen Werte zeigen, wo ein Kurs in den nächsten sieben Tagen wahrscheinlich liegen wird. Das ist eine Spanne, kein vorhergesagter Kurs, und sie kommt mit einer Bilanz, wie oft frühere Spannen gestimmt haben.",
+    "rangeTitle": "Was die schattierte Spanne bedeutet",
+    "range": "Das dunklere Band ist die 80-%-Spanne: Sind die Prognosen gut kalibriert, liegt der tatsächliche Kurs an etwa 8 von 10 Tagen darin. Das hellere Band ist die 95-%-Spanne. Die gestrichelte Linie ist die mittlere Schätzung, die ebenso oft zu hoch wie zu niedrig liegt.",
+    "madeTitle": "Wie sie entsteht",
+    "made": "Einmal täglich, nach dem Tagesschluss, nimmt Marketlens die Schlusskurse der letzten zwei Jahre und passt drei gängige statistische Modelle aus der quelloffenen Bibliothek statsforecast an: exponentielle Glättung, Theta und ARIMA. Kryptowährungen werden Tag für Tag prognostiziert, Aktien, Fonds und Währungen nach Handelstagen.",
+    "chosenTitle": "Wie ein Modell ausgewählt wird",
+    "chosen": "Jedes Modell wird an den letzten acht Wochen getestet: Es prognostiziert jede Woche aus den Kursen davor, und seine Prognosen werden mit dem tatsächlichen Verlauf verglichen. Die einfachste Annahme, dass der Kurs gleich bleibt, wird genauso getestet. Verwendet wird das Modell mit der kleinsten typischen Abweichung. Ist kein Modell besser als die einfache Annahme, sagt die Seite das, und die Spanne liegt um den heutigen Kurs.",
+    "recordTitle": "Wie die Bilanz gemessen wird",
+    "record": "Unter jedem Diagramm steht in einem Satz, wie oft der tatsächliche Kurs innerhalb der 80-%-Spanne lag und wie groß die typische Abweichung war, im Vergleich zur einfachen Annahme. Bis Marketlens mindestens 20 eigene Prognosetage für einen Wert geprüft hat, stammt die Bilanz aus dem Achtwochentest an vergangenen Kursen, danach aus den veröffentlichten Prognosen.",
+    "limitsTitle": "Was sie nicht können",
+    "limits": "Die Modelle sehen nur vergangene Kurse. Sie wissen nichts von Nachrichten, Quartalszahlen, Regulierung oder einem plötzlichen Einbruch, und eine Spanne kann gerade dann falsch liegen, wenn es am meisten darauf ankommt. Prognosen werden in US-Dollar berechnet; in einer anderen Anzeigewährung werden sie zu deren aktuellem Kurs umgerechnet. Ohne API-Schlüssel beruhen Prognosen für Aktien und Fonds auf Beispieldaten.",
+    "adviceTitle": "Keine Finanzberatung",
+    "advice": "Prognosen sind Schätzungen und dienen nur der Information. Nichts hier ist eine Empfehlung, etwas zu kaufen oder zu verkaufen."
   }
 }

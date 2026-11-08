@@ -6,6 +6,7 @@ import {
   formatAge,
   formatChangePct,
   formatDate,
+  formatPercent,
   formatPrice,
   parseAmount,
 } from "./format";
@@ -43,6 +44,21 @@ describe("formatChangePct", () => {
   it("leaves a missing change empty", () => {
     expect(formatChangePct(null, "en")).toBe("");
   });
+});
+
+describe("formatPercent", () => {
+  it.each([
+    ["96.43", "en", 0, "96%"],
+    ["1.84", "en", 2, "1.84%"],
+    ["1.84", "fr", 2, "1,84 %"],
+    ["71.4286", "de", 0, "71 %"],
+    ["0.02", "en", 2, "0.02%"],
+  ] as const)(
+    "writes %s in %s with up to %d decimals as %s",
+    (percent, language, decimals, expected) => {
+      expect(plainSpaces(formatPercent(percent, language, decimals))).toBe(expected);
+    },
+  );
 });
 
 describe("changeDirection", () => {
