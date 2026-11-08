@@ -147,6 +147,9 @@ builder.Services.AddHttpClient<ForecasterClient>((services, http) =>
     http.BaseAddress = forecasts.BaseUrl;
     http.Timeout = forecasts.RequestTimeout;
 });
+builder.Services.AddSingleton<ForecastEvaluator>();
+builder.Services.AddSingleton<ForecastScheduler>();
+builder.Services.AddHostedService(services => services.GetRequiredService<ForecastScheduler>());
 
 builder.Services.AddSingleton<QuoteReader>();
 builder.Services.AddSingleton<HistoryQuery>();
@@ -169,6 +172,7 @@ var api = app.MapGroup("/api/v1")
 api.MapQuoteEndpoints();
 api.MapConversionEndpoints();
 api.MapHistoryEndpoints();
+api.MapForecastEndpoints();
 api.MapStatusEndpoints();
 api.MapLocaleEndpoints();
 app.MapHub<QuotesHub>(QuotesHub.Path);

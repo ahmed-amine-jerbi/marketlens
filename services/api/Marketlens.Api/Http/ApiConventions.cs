@@ -53,7 +53,7 @@ public static class ApiConventions
                 {
                     Title = "Marketlens API",
                     Version = "v1",
-                    Description = "Live currency, crypto, stock and ETF prices, conversions between any two assets, and chart history. Prices are decimal strings; errors are RFC 9457 problem details with urn:marketlens:problem:* types.",
+                    Description = "Live currency, crypto, stock and ETF prices, conversions between any two assets, chart history and backtested forecast ranges. Prices are decimal strings; errors are RFC 9457 problem details with urn:marketlens:problem:* types.",
                     License = new OpenApiLicense { Name = "MIT", Identifier = "MIT" },
                 };
 
@@ -65,6 +65,7 @@ public static class ApiConventions
                     new() { Name = "Quotes", Description = "Latest prices in any display currency." },
                     new() { Name = "Conversions", Description = "Amounts converted between any two assets." },
                     new() { Name = "History", Description = "Chart history, converted point by point." },
+                    new() { Name = "Forecasts", Description = "Ranges for the next days with their measured track record; estimates, not financial advice." },
                     new() { Name = "Status", Description = "Freshness of each data source." },
                     new() { Name = "Locale", Description = "Language and currency suggestions for new visitors." },
                 };

@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Marketlens.Api.Data.Migrations
 {
     [DbContext(typeof(MarketlensDbContext))]
-    [Migration("20261108224059_AddForecasts")]
+    [Migration("20261108224445_AddForecasts")]
     partial class AddForecasts
     {
         /// <inheritdoc />
@@ -127,6 +127,11 @@ namespace Marketlens.Api.Data.Migrations
                     b.Property<int>("HorizonDays")
                         .HasColumnType("integer")
                         .HasColumnName("horizon_days");
+
+                    b.Property<decimal>("LastCloseUsd")
+                        .HasPrecision(38, 18)
+                        .HasColumnType("numeric(38,18)")
+                        .HasColumnName("last_close_usd");
 
                     b.Property<string>("Model")
                         .IsRequired()

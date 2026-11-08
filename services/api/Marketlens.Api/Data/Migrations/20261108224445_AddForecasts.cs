@@ -19,6 +19,7 @@ namespace Marketlens.Api.Data.Migrations
                     asset_id = table.Column<Guid>(type: "uuid", nullable: false),
                     created_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     series_end_date = table.Column<DateOnly>(type: "date", nullable: false),
+                    last_close_usd = table.Column<decimal>(type: "numeric(38,18)", precision: 38, scale: 18, nullable: false),
                     model = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
                     horizon_days = table.Column<int>(type: "integer", nullable: false),
                     backtest_baseline_error_pct = table.Column<decimal>(type: "numeric(12,4)", precision: 12, scale: 4, nullable: false),

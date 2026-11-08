@@ -125,6 +125,11 @@ namespace Marketlens.Api.Data.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("horizon_days");
 
+                    b.Property<decimal>("LastCloseUsd")
+                        .HasPrecision(38, 18)
+                        .HasColumnType("numeric(38,18)")
+                        .HasColumnName("last_close_usd");
+
                     b.Property<string>("Model")
                         .IsRequired()
                         .HasMaxLength(32)

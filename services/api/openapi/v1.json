@@ -2,7 +2,7 @@
   "openapi": "3.1.1",
   "info": {
     "title": "Marketlens API",
-    "description": "Live currency, crypto, stock and ETF prices, conversions between any two assets, and chart history. Prices are decimal strings; errors are RFC 9457 problem details with urn:marketlens:problem:* types.",
+    "description": "Live currency, crypto, stock and ETF prices, conversions between any two assets, chart history and backtested forecast ranges. Prices are decimal strings; errors are RFC 9457 problem details with urn:marketlens:problem:* types.",
     "license": {
       "name": "MIT",
       "identifier": "MIT"
@@ -467,6 +467,84 @@
         }
       }
     },
+    "/api/v1/assets/{key}/forecast": {
+      "get": {
+        "tags": [
+          "Forecasts"
+        ],
+        "summary": "Get an asset\u0027s forecast range for the next days and its track record",
+        "operationId": "GetAssetForecast",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "in",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForecastResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/status": {
       "get": {
         "tags": [
@@ -740,6 +818,114 @@
           }
         }
       },
+      "ForecastPointResponse": {
+        "required": [
+          "t",
+          "median",
+          "low80",
+          "high80",
+          "low95",
+          "high95"
+        ],
+        "type": "object",
+        "properties": {
+          "t": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "median": {
+            "pattern": "^-?[0-9]\u002B(\\.[0-9]\u002B)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "low80": {
+            "pattern": "^-?[0-9]\u002B(\\.[0-9]\u002B)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "high80": {
+            "pattern": "^-?[0-9]\u002B(\\.[0-9]\u002B)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "low95": {
+            "pattern": "^-?[0-9]\u002B(\\.[0-9]\u002B)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "high95": {
+            "pattern": "^-?[0-9]\u002B(\\.[0-9]\u002B)?$",
+            "type": "string",
+            "format": "decimal"
+          }
+        },
+        "description": "One forecast day in the display currency; \u0060t\u0060 is midnight UTC, like history points."
+      },
+      "ForecastResponse": {
+        "required": [
+          "status",
+          "in",
+          "model",
+          "createdAtUtc",
+          "horizonDays",
+          "points",
+          "trackRecord"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ForecastStatus"
+          },
+          "in": {
+            "$ref": "#/components/schemas/AssetKey"
+          },
+          "model": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "horizonDays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ForecastPointResponse"
+            }
+          },
+          "trackRecord": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TrackRecordResponse"
+              }
+            ]
+          }
+        }
+      },
+      "ForecastStatus": {
+        "enum": [
+          "available",
+          "not-better-than-baseline",
+          "insufficient-history",
+          "pending"
+        ]
+      },
       "Freshness": {
         "enum": [
           "live",
@@ -949,6 +1135,50 @@
             }
           }
         }
+      },
+      "TrackRecordResponse": {
+        "required": [
+          "source",
+          "windowWeeks",
+          "coverage80Pct",
+          "meanErrorPct",
+          "baselineErrorPct"
+        ],
+        "type": "object",
+        "properties": {
+          "source": {
+            "$ref": "#/components/schemas/TrackRecordSource"
+          },
+          "windowWeeks": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "coverage80Pct": {
+            "pattern": "^-?[0-9]\u002B(\\.[0-9]\u002B)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "meanErrorPct": {
+            "pattern": "^-?[0-9]\u002B(\\.[0-9]\u002B)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "baselineErrorPct": {
+            "pattern": "^-?[0-9]\u002B(\\.[0-9]\u002B)?$",
+            "type": "string",
+            "format": "decimal"
+          }
+        }
+      },
+      "TrackRecordSource": {
+        "enum": [
+          "backtest",
+          "live"
+        ]
       }
     }
   },
@@ -968,6 +1198,10 @@
     {
       "name": "History",
       "description": "Chart history, converted point by point."
+    },
+    {
+      "name": "Forecasts",
+      "description": "Ranges for the next days with their measured track record; estimates, not financial advice."
     },
     {
       "name": "Status",

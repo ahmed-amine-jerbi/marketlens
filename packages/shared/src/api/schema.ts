@@ -106,6 +106,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/assets/{key}/forecast": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get an asset's forecast range for the next days and its track record */
+        get: operations["GetAssetForecast"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/status": {
         parameters: {
             query?: never;
@@ -197,6 +214,34 @@ export interface components {
             freshness: components["schemas"]["Freshness"];
             legs: components["schemas"]["ConversionLegResponse"][];
         };
+        /** @description One forecast day in the display currency; `t` is midnight UTC, like history points. */
+        ForecastPointResponse: {
+            /** Format: date-time */
+            t: string;
+            /** Format: decimal */
+            median: string;
+            /** Format: decimal */
+            low80: string;
+            /** Format: decimal */
+            high80: string;
+            /** Format: decimal */
+            low95: string;
+            /** Format: decimal */
+            high95: string;
+        };
+        ForecastResponse: {
+            status: components["schemas"]["ForecastStatus"];
+            in: components["schemas"]["AssetKey"];
+            model: null | string;
+            /** Format: date-time */
+            createdAtUtc: null | string;
+            /** Format: int32 */
+            horizonDays: number | string;
+            points: components["schemas"]["ForecastPointResponse"][];
+            trackRecord: null | components["schemas"]["TrackRecordResponse"];
+        };
+        /** @enum {unknown} */
+        ForecastStatus: "available" | "not-better-than-baseline" | "insufficient-history" | "pending";
         /**
          * @description How current a price is. Ordered from freshest to slowest.
          * @enum {unknown}
@@ -256,6 +301,19 @@ export interface components {
             stockData: string;
             sources: components["schemas"]["SourceStatus"][];
         };
+        TrackRecordResponse: {
+            source: components["schemas"]["TrackRecordSource"];
+            /** Format: int32 */
+            windowWeeks: number | string;
+            /** Format: decimal */
+            coverage80Pct: string;
+            /** Format: decimal */
+            meanErrorPct: string;
+            /** Format: decimal */
+            baselineErrorPct: string;
+        };
+        /** @enum {unknown} */
+        TrackRecordSource: "backtest" | "live";
     };
     responses: never;
     parameters: never;
@@ -563,6 +621,66 @@ export interface operations {
             };
             /** @description Too Many Requests */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetAssetForecast: {
+        parameters: {
+            query?: {
+                in?: string;
+            };
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ForecastResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

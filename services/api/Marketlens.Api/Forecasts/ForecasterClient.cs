@@ -20,10 +20,17 @@ public sealed class ForecastOptions
     /// <summary>Weeks of rolling backtest windows, and of live evaluations in the track record.</summary>
     public int BacktestWeeks { get; set; } = 8;
 
+    /// <summary>Live evaluations an asset needs before its track record switches from the backtest to live results.</summary>
+    public int MinLiveEvaluations { get; set; } = 20;
+
     /// <summary>Days of daily closes sent to the forecaster; an asset with less history has no forecast.</summary>
     public int HistoryDays { get; set; } = 730;
 
-    public TimeSpan CheckInterval { get; set; } = TimeSpan.FromHours(1);
+    /// <summary>
+    /// How often the scheduler looks for new closes. The check is two grouped queries, so it runs
+    /// often: a fresh database gets forecasts minutes after its history arrives, not an hour later.
+    /// </summary>
+    public TimeSpan CheckInterval { get; set; } = TimeSpan.FromMinutes(10);
 
     /// <summary>One asset's backtest and forecast; the slowest take a few seconds.</summary>
     public TimeSpan RequestTimeout { get; set; } = TimeSpan.FromMinutes(2);

@@ -18,6 +18,9 @@ public sealed class Forecast
     /// <summary>The date of the last daily close the forecast was computed from.</summary>
     public required DateOnly SeriesEndDate { get; init; }
 
+    /// <summary>The close on <see cref="SeriesEndDate"/>: the "no change" forecast the live track record compares with.</summary>
+    public required decimal LastCloseUsd { get; init; }
+
     /// <summary>The model the backtest chose, or <c>Naive</c> when no model beat "no change".</summary>
     public required string Model { get; init; }
 
@@ -87,6 +90,7 @@ internal sealed class ForecastConfiguration : IEntityTypeConfiguration<Forecast>
         // The endpoint and the scheduler read an asset's latest forecast.
         builder.HasIndex(forecast => new { forecast.AssetId, forecast.CreatedAtUtc }).IsDescending(false, true);
 
+        builder.Property(forecast => forecast.LastCloseUsd).HasPrecision(38, 18);
         builder.Property(forecast => forecast.Model).HasMaxLength(32);
         builder.ComplexProperty(forecast => forecast.Backtest, backtest =>
         {
