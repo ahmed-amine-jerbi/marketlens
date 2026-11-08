@@ -48,9 +48,11 @@ graph LR
 - **History:** `GET /api/v1/assets/{key}/history?range=&in=` → `HistoryQuery` picks the candle
   interval for the range and reads a primary-key range from PostgreSQL, down-sampled to at most
   500 points.
-- **Forecast:** once a day, and at startup for anything stale, `ForecastScheduler` sends each asset's
-  daily closes to the forecaster, stores the result, and `ForecastEvaluator` later scores past
-  forecasts against real closes for the live track record.
+- **Forecast:** every 10 minutes `ForecastScheduler` looks for assets with a complete daily close
+  newer than their latest forecast (so each asset is forecast once a day, and a fresh database fills
+  within minutes), sends the last two years of closes to the forecaster, and stores the answer.
+  `ForecastEvaluator` scores past forecast days against the real closes for the live track record.
+  `GET /api/v1/assets/{key}/forecast?in=` serves the latest, converted to the display currency.
 - **Alert:** every `QuoteBook` update looks up armed rules by asset and by threshold currency in
   memory, compares through `ConversionCalculator`, and on a crossing writes a notification and sends
   a push.

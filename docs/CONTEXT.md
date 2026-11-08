@@ -29,9 +29,9 @@ One user type: the *everyday, curious* visitor, signed out by default, optionall
 | Mobile | Expo (expo-router), React Native, Victory Native *(from M7)* |
 | Shared TS | `@marketlens/shared`: tokens, i18n messages, formatting, generated API types |
 | API | ASP.NET Core 10 (minimal APIs, SignalR), EF Core + Npgsql, ASP.NET Core Identity, xUnit v3 |
-| Forecaster | Python 3.12, FastAPI, statsforecast *(from M4)*, uv, Ruff, mypy strict, pytest |
+| Forecaster | Python 3.12, FastAPI, statsforecast 2.1, pandas, uv, Ruff, mypy strict, pytest |
 | Data | PostgreSQL 17 |
-| Local | Docker Compose (postgres, mailpit; api, forecaster, web join in later milestones) |
+| Local | Docker Compose: postgres, mailpit, api, forecaster (internal only), web (nginx) |
 | CI | GitHub Actions: lint, typecheck, tests per language, gitleaks |
 
 ## 4. Architecture
@@ -61,7 +61,7 @@ Full list with walkthroughs: [features/README.md](features/README.md).
 | Currency conversion (reference implementation) | `Conversions/`, `apps/web/src/conversions/` | web shipped (M3); mobile M7 | [features/currency-conversion.md](features/currency-conversion.md) |
 | Price history charts | `History/`, `apps/web/src/components/PriceChart.tsx` | web shipped (M3); mobile M7 | [features/price-history-charts.md](features/price-history-charts.md) |
 | Localization | `packages/shared/src/i18n`, `apps/web/src/settings/`, `Locale/` | web shipped (M3); GeoLite2 D47 | [features/localization.md](features/localization.md) |
-| Forecasts | `services/forecaster`, `Forecasts/` | planned (M4) | `features/forecasts.md` |
+| Forecasts | `services/forecaster`, `Forecasts/`, `apps/web/src/forecasts/` | web shipped (M4); mobile M7 | [features/forecasts.md](features/forecasts.md) |
 | Accounts and sign-in | `Accounts/` | planned (M5) | `features/accounts-and-sign-in.md` |
 | Watchlists | `apps/web/src/watchlist/` (device); `Watchlists/` (M5) | web shipped on the device (M3); sync M5 | [features/watchlists.md](features/watchlists.md) |
 | Price alerts | `Alerts/` | planned (M6) | `features/price-alerts.md` |
@@ -98,9 +98,11 @@ Project-specific:
 | **Adapter** | The one class that talks to one provider and emits provider-neutral types. |
 | **Forecast** | A predicted range for the next horizon steps: `median`, 80% and 95% bands. |
 | **Horizon** | How far a forecast reaches: 7 days for crypto, 5 business days otherwise. |
-| **Baseline** | The "no change" forecast; a model is shown only if it beats it in the backtest. |
+| **Baseline** | The "no change" forecast (the last close carried forward). The chosen model must beat it in the backtest; otherwise the range is the baseline's, and the page says so (D57). |
 | **Backtest** | Rolling re-forecast of past data to measure a model before showing it. |
-| **Track record** | How often the real price stayed inside the 80% band, from the backtest or from live results. |
+| **Track record** | How often the real price stayed inside the 80% band and the typical miss next to the baseline's, from the backtest or, after 20 evaluated days, from live results. |
+| **Forecast range** | The 80% and 95% bands drawn on the chart after the last close; "forecast range" in UI copy, never "prediction". |
+| **Typical miss** | UI words for mean absolute % error of the median. |
 | **Watchlist** | A user's ordered list of asset keys; on the device when signed out, synced when signed in. |
 | **Alert rule** | "Asset above/below threshold in currency"; states `armed` and `triggered`. |
 | **Push subscription** | A device or browser that can receive push (`web` or `expo`). |
@@ -145,6 +147,11 @@ decisions:
   `/static/` so they never collide with `/assets/<key>` pages; D48 push to GitHub after M3.
 - 2026-11-08 Rates and amounts keep 15 significant digits (ratios of USD prices otherwise show
   rounding residue).
+- 2026-11-09 Forecasts (M4): forecast range shown in the display currency at its latest rate (D51);
+  statuses `available` / `pending` / `insufficient-history` (D52, D57); decimals as strings on the
+  internal contract too (D53); 8 weekly backtest windows, strict baseline rule (D54); 730 days of
+  complete closes, checked every 10 minutes (D55); points as rows, 90-day retention (D56); the
+  range is always shown with honest wording, drawn on 1W / 1M / 3M (D57, D59).
 
 ## 11. Extension recipes
 
@@ -167,6 +174,9 @@ decisions:
 - **Add a table:** entity + `IEntityTypeConfiguration` in `Data/`, `DbSet` on
   `MarketlensDbContext`, `dotnet ef migrations add <Name> --project Marketlens.Api --output-dir
   Data/Migrations`; migrations apply at startup.
+- **Add a forecasting model:** one entry in `CANDIDATE_MODELS`
+  (`services/forecaster/forecaster/forecast.py`); the backtest decides when it is used. Time it on
+  730 real closes first. See [features/forecasts.md](features/forecasts.md).
 - **Add a background job:** a `BackgroundService` in its feature folder, registered in
   `Program.cs` after the services it depends on (hosted services start in order); never let an
   exception escape the loop.
@@ -178,6 +188,9 @@ decisions:
 - Finnhub, Twelve Data and CoinGecko fixtures follow documented shapes, not recorded responses;
   re-record once the P1 keys exist.
 - Live feeds re-send unchanged prices each second (Binance re-reports them); could be trimmed.
+- Forecasts: an asset whose two-year history is too sparse for the forecaster stays "being
+  prepared" (the API doesn't check the forecaster's minimum count); display currencies convert
+  every forecast day at today's rate.
 
 ## 13. Open questions
 

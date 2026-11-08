@@ -8,6 +8,7 @@ One walkthrough per feature: what it does, how it works layer by layer, and how 
 | [Live quotes](live-quotes.md) | web shipped; mobile M7 | `services/api/Marketlens.Api/Quotes/` |
 | [Currency conversion](currency-conversion.md) (reference implementation) | web shipped; mobile M7 | `services/api/Marketlens.Api/Conversions/` |
 | [Price history charts](price-history-charts.md) | web shipped; mobile M7 | `services/api/Marketlens.Api/History/` |
+| [Forecasts](forecasts.md) | web shipped; mobile M7 | `services/forecaster/`, `services/api/Marketlens.Api/Forecasts/` |
 | [Localization](localization.md) | web shipped; mobile M7 | `packages/shared/src/i18n/`, `apps/web/src/settings/` |
 | [Watchlists](watchlists.md) | web shipped (device); sync M5 | `apps/web/src/watchlist/` |
 

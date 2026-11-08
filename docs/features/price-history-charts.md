@@ -110,3 +110,5 @@ types. A finer interval for a range needs that interval stored and retained (`Ca
 
 - 2026-11-08 — Created (marketlens-v1, M2).
 - 2026-11-08 — Web chart (M3).
+- 2026-11-09 — The web chart draws the forecast range on 1W / 1M / 3M; see
+  [forecasts.md](forecasts.md) (M4).
