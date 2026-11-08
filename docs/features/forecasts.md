@@ -15,11 +15,12 @@
   stocks, ETFs and currencies.
 - **A measured track record** under the chart: the share of real closes that fell inside the 80%
   range and the typical miss (mean absolute % error), next to the typical miss of "no change". It
-  comes from an eight-week backtest on past prices until Marketlens has checked 20 of its own
-  forecast days for the asset; from then on, from those published forecasts.
-- **Honest wording** (D57, D59). Three sentences: the model beat "no change"; it did *about as
-  well* (the win doesn't show at two decimals); or no model beat it, so the range is the no-change
-  model's, centred on today's price. The range is shown in all three cases.
+  comes from an eight-week backtest on past prices until Marketlens's own published forecasts for
+  the asset have been checked across the whole eight weeks; from then on, from those forecasts.
+- **Honest wording** (D57, D59). Three sentences: the forecasts beat "no change"; they did *about
+  as well* (the win doesn't show at two decimals); or they did no better. The range is shown in all
+  three cases; when no model beat "no change" in the backtest, it is the no-change model's range,
+  centred on the last close.
 - **Who and where:** anyone, no account. Drawn on the 1W, 1M and 3M charts; on 1D, 1Y and 5Y the
   sentence stays and says where the range is drawn. A "Show forecast" checkbox hides range and
   sentence. Prices follow the display currency (converted at its latest rate, D51).
@@ -32,18 +33,18 @@
 
 ### Making a forecast (background, API → forecaster)
 
-1. At startup and every 10 minutes, [ForecastScheduler](../../services/api/Marketlens.Api/Forecasts/ForecastScheduler.cs#L54)
-   first asks [ForecastEvaluator](../../services/api/Marketlens.Api/Forecasts/ForecastEvaluator.cs#L47)
+1. At startup and every 10 minutes, [ForecastScheduler](../../services/api/Marketlens.Api/Forecasts/ForecastScheduler.cs#L20)
+   first asks [ForecastEvaluator](../../services/api/Marketlens.Api/Forecasts/ForecastEvaluator.cs#L27)
    to score past forecast days, and to prune forecasts older than 90 days.
-2. [FindStaleAsync](../../services/api/Marketlens.Api/Forecasts/ForecastScheduler.cs#L107)
+2. [FindStaleAsync](../../services/api/Marketlens.Api/Forecasts/ForecastScheduler.cs#L132)
    compares, with two grouped queries, each asset's newest *complete* daily close (today's
    still-open bucket left out; a weekend close counts as Friday's for business-day assets) with
    the `SeriesEndDate` of its latest forecast. Assets with a newer close are due, coins first,
    currencies last.
-3. [ForecastAsync](../../services/api/Marketlens.Api/Forecasts/ForecastScheduler.cs#L132) reads the
+3. [ForecastAsync](../../services/api/Marketlens.Api/Forecasts/ForecastScheduler.cs#L158) reads the
    last 730 days of daily closes (weekdays only for business-day assets), skips the asset if they
    don't reach back far enough, and posts them through
-   [ForecasterClient](../../services/api/Marketlens.Api/Forecasts/ForecasterClient.cs#L85) to the
+   [ForecasterClient](../../services/api/Marketlens.Api/Forecasts/ForecasterClient.cs#L81) to the
    forecaster's `POST /v1/forecasts`.
 4. The forecaster's [create_forecast](../../services/forecaster/forecaster/app.py#L94) validates the
    series and calls [forecast_closes](../../services/forecaster/forecaster/forecast.py#L71):
@@ -63,12 +64,13 @@
 1. The asset page ([AssetPage.tsx](../../apps/web/src/pages/AssetPage.tsx#L34)) loads
    `GET /api/v1/assets/{key}/forecast?in=<display currency>` with
    [useForecast](../../apps/web/src/api/queries.ts#L134).
-2. [GetForecast](../../services/api/Marketlens.Api/Forecasts/ForecastEndpoints.cs#L63) reads the
+2. [GetForecast](../../services/api/Marketlens.Api/Forecasts/ForecastEndpoints.cs#L70) reads the
    latest forecast; [StatusOf](../../services/api/Marketlens.Api/Forecasts/ForecastEndpoints.cs#L56)
    says `available`, `pending` (enough history, not yet computed) or `insufficient-history`. Points
    are converted into the display currency with `ConversionCalculator.Rate`; the track record is the
-   live one when [ReadLiveTrackRecordAsync](../../services/api/Marketlens.Api/Forecasts/ForecastEvaluator.cs#L76)
-   has 20 evaluations in the window, else the stored backtest.
+   live one when [ReadLiveTrackRecordAsync](../../services/api/Marketlens.Api/Forecasts/ForecastEvaluator.cs#L85)
+   finds evaluations spanning the whole window, else the stored backtest. A forecast whose days are
+   all past (the forecaster has been down) is not current: the answer is `pending`.
 3. [PriceChart](../../apps/web/src/components/PriceChart.tsx#L81) merges history and forecast with
    [toChartPoints](../../apps/web/src/components/PriceChart.tsx#L40) (the last close opens the
    band so there is no gap) and draws the bands on 1W / 1M / 3M only
@@ -121,13 +123,19 @@ sequenceDiagram
   `ForecastOptions` holds every knob. `ForecastFrequency` serialises as `D` / `B`. A 422 becomes
   `ForecasterRefusedException` with the forecaster's reason.
 - **API: scheduling** ([ForecastScheduler.cs](../../services/api/Marketlens.Api/Forecasts/ForecastScheduler.cs)).
-  Per-asset failures (refused series, rejected answer, timeout) are logged and the run moves on; an
-  unreachable forecaster ends the run until the next check, since every asset would fail.
-  `HasEnoughHistoryAsync` is the same history rule, for the endpoint.
+  Per-asset failures (a refused series, an HTTP error, a rejected answer, a timeout) are logged, the
+  asset is left alone until its next daily close, and the run moves on; not reaching the forecaster
+  at all ends the run until the next check, since every asset would fail. History that doesn't reach
+  back yet is simply re-checked (one read), because a backfill may still be filling it in.
+  `HasEnoughHistoryAsync` is the same history rule for the endpoint, and treats a refused series as
+  insufficient history. The typed client recycles pooled connections every 15 minutes, so a
+  recreated forecaster container is found at its new address.
 - **API: evaluation** ([ForecastEvaluator.cs](../../services/api/Marketlens.Api/Forecasts/ForecastEvaluator.cs)).
   `Evaluate` is the pure scoring rule (inside the 80% range; median error; "no change" error, both
   in % of the actual close). Evaluations are inserted with `ON CONFLICT DO NOTHING`, so runs can
-  overlap. The live record's `beatsBaseline` compares the mean errors.
+  overlap. The live record needs evaluations from the first week of the window onwards, so "over
+  the last 8 weeks of our published forecasts" is never said of a few days; its `beatsBaseline`
+  compares the mean errors.
 - **API: endpoint** ([ForecastEndpoints.cs](../../services/api/Marketlens.Api/Forecasts/ForecastEndpoints.cs)).
   Copies the `Conversions` shape: parse, validate, typed results, problems from `ApiProblems`.
 - **Data** ([Forecast.cs](../../services/api/Marketlens.Api/Data/Forecast.cs)). Points are rows, not
@@ -203,9 +211,8 @@ into `ForecastOptions`:
 | Key | Default | Effect |
 |---|---|---|
 | `HorizonDays` | 7 | Calendar days ahead |
-| `BacktestWeeks` | 8 | Backtest windows, and the live track-record window |
+| `BacktestWeeks` | 8 | Backtest windows, and the window the live track record must span |
 | `HistoryDays` | 730 | Closes sent; an asset with less history has no forecast |
-| `MinLiveEvaluations` | 20 | Evaluations before the record switches to live results |
 | `CheckInterval` | 00:10:00 | How often the scheduler looks for new closes |
 | `RequestTimeout` | 00:02:00 | One asset's forecaster call |
 | `RetentionDays` | 90 | Forecasts deleted after this |
@@ -216,12 +223,13 @@ Web: [forecastRanges](../../apps/web/src/components/PriceChart.tsx#L34).
 ## Errors and edge cases
 
 - **Forecaster down:** the check logs one warning and retries in 10 minutes; pages keep the last
-  forecast with its date.
-- **Too-short or malformed series:** 422 from the forecaster, logged with the reason; the page says
-  the asset needs two years of history (or "being prepared" if the API thinks it has enough but the
-  series is too sparse — see limitations).
-- **Bad answer** (wrong count, stale dates, inverted ranges): rejected before storage, retried at
-  the next check. **Slow asset:** timeout after 2 minutes, logged, the run continues.
+  forecast with its date while any of its days is today or later, then say `pending`. In Compose
+  the API waits for the forecaster's health check before starting.
+- **Too-short or malformed series:** 422 from the forecaster, logged with the reason; the asset waits
+  for its next close and the page says it needs two years of history.
+- **Forecaster error on one series (500), bad answer** (wrong count, stale dates, inverted ranges)
+  **or a slow asset** (2-minute timeout): logged, nothing stored, the asset waits for its next close,
+  the run continues; its page says `pending`.
 - **A model can't fit** (flat pegs): left out of the choice; a flat peg ends as "no change".
 - **Overlapping evaluation runs:** `ON CONFLICT DO NOTHING`.
 - **Display currency without a price:** 503 `rate-unavailable`.
@@ -236,10 +244,10 @@ Web: [forecastRanges](../../apps/web/src/components/PriceChart.tsx#L34).
 - API: `cd services/api && dotnet test` — [ForecasterContractTests](../../services/api/Marketlens.Api.Tests/Forecasts/ForecasterContractTests.cs)
   (same fixtures, both directions, rejected answers),
   [ForecastSchedulerTests](../../services/api/Marketlens.Api.Tests/Forecasts/ForecastSchedulerTests.cs)
-  (frequency and steps, status, scoring, end to end through
+  (frequency and steps, status, current forecast, scoring, end to end through
   [ForecasterStub](../../services/api/Marketlens.Api.Tests/ForecasterStub.cs): business-day points,
-  EUR conversion, "not better" asset, insufficient history, problems, live record after 21
-  evaluated days).
+  EUR conversion, "not better" asset, insufficient history, problems, a 500 on one ETF doesn't stop
+  the others, 21 recent days keep the backtest record, days spanning the window make it live).
 - Web: `npm test` ([PriceChart.test.ts](../../apps/web/src/components/PriceChart.test.ts)); E2E
   `npm run test:e2e -w @marketlens/web` (forecast flow, axe on the method page).
 - **By hand:** `docker compose up --build`, wait a few minutes, open
@@ -263,8 +271,9 @@ Web: [forecastRanges](../../apps/web/src/components/PriceChart.tsx#L34).
   coins beat "no change" by chance-sized margins (why D57 always shows the range and words it
   honestly).
 - Display currencies use today's rate for every forecast day (FX uncertainty not included).
-- An asset whose history reaches back two years but is too sparse for the forecaster stays
-  "being prepared"; the forecaster's minimum (100 + windows × steps closes) isn't checked by the API.
+- Failed series are remembered in memory: after an API restart each is tried once more.
+- Each forecast day is scored once per forecast that covers it (up to seven), so live figures weight
+  days by how many forecasts reached them, as the backtest does.
 - After adding a Finnhub key, sample-data stock forecasts stay until the next complete close.
 - Sample stocks get forecasts too (labelled sample data on the page).
 
@@ -272,3 +281,6 @@ Web: [forecastRanges](../../apps/web/src/components/PriceChart.tsx#L34).
 
 - 2026-11-09 — Created (marketlens-v1, M4: forecaster, scheduler, evaluator, endpoint, web range,
   method page; D51–D59).
+- 2026-11-09 — Code review fixes (D60): one asset's failure no longer stops the run and waits for
+  its next close; the live record needs the whole window; outdated forecasts read `pending`;
+  `MinLiveEvaluations` removed; the "no better" sentence no longer says where the range is centred.

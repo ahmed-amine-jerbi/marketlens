@@ -100,7 +100,7 @@ Project-specific:
 | **Horizon** | How far a forecast reaches: 7 days for crypto, 5 business days otherwise. |
 | **Baseline** | The "no change" forecast (the last close carried forward). The chosen model must beat it in the backtest; otherwise the range is the baseline's, and the page says so (D57). |
 | **Backtest** | Rolling re-forecast of past data to measure a model before showing it. |
-| **Track record** | How often the real price stayed inside the 80% band and the typical miss next to the baseline's, from the backtest or, after 20 evaluated days, from live results. |
+| **Track record** | How often the real price stayed inside the 80% band and the typical miss next to the baseline's, from the backtest or, once Marketlens's own forecasts have been checked across the whole 8-week window, from live results. |
 | **Forecast range** | The 80% and 95% bands drawn on the chart after the last close; "forecast range" in UI copy, never "prediction". |
 | **Typical miss** | UI words for mean absolute % error of the median. |
 | **Watchlist** | A user's ordered list of asset keys; on the device when signed out, synced when signed in. |
@@ -151,7 +151,8 @@ decisions:
   statuses `available` / `pending` / `insufficient-history` (D52, D57); decimals as strings on the
   internal contract too (D53); 8 weekly backtest windows, strict baseline rule (D54); 730 days of
   complete closes, checked every 10 minutes (D55); points as rows, 90-day retention (D56); the
-  range is always shown with honest wording, drawn on 1W / 1M / 3M (D57, D59).
+  range is always shown with honest wording, drawn on 1W / 1M / 3M (D57, D59); after the code
+  review, a failing asset waits for its next close and the live record must span the window (D60).
 
 ## 11. Extension recipes
 

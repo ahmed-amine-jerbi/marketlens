@@ -912,7 +912,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/TrackRecordResponse"
+                "$ref": "#/components/schemas/TrackRecord"
               }
             ]
           }
@@ -1135,7 +1135,7 @@
           }
         }
       },
-      "TrackRecordResponse": {
+      "TrackRecord": {
         "required": [
           "source",
           "windowWeeks",
@@ -1176,7 +1176,7 @@
             "type": "boolean"
           }
         },
-        "description": "How the forecasts did: share of real closes inside the 80% range, and errors next to \u0022no change\u0022."
+        "description": "How the forecasts did: share of real closes inside the 80% range, and the typical miss next to\n\u0022no change\u0022\u0027s; bool TrackRecord.BeatsBaseline is true when the forecasts\u0027 error is the lower one."
       },
       "TrackRecordSource": {
         "enum": [

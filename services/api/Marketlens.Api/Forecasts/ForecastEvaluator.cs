@@ -7,14 +7,17 @@ namespace Marketlens.Api.Forecasts;
 
 public enum TrackRecordSource
 {
-    /// <summary>From the forecaster's rolling backtest, until enough live evaluations exist.</summary>
+    /// <summary>From the forecaster's rolling backtest, until live evaluations span the whole window.</summary>
     Backtest,
 
     /// <summary>From stored forecasts compared with the closes that actually happened.</summary>
     Live,
 }
 
-/// <summary>A track record; <see cref="BeatsBaseline"/> is true when the forecasts' error is below "no change"'s.</summary>
+/// <summary>
+/// How the forecasts did: share of real closes inside the 80% range, and the typical miss next to
+/// "no change"'s; <see cref="BeatsBaseline"/> is true when the forecasts' error is the lower one.
+/// </summary>
 public sealed record TrackRecord(TrackRecordSource Source, int WindowWeeks, decimal Coverage80Pct, decimal MeanErrorPct, decimal BaselineErrorPct, bool BeatsBaseline);
 
 /// <summary>
@@ -24,6 +27,9 @@ public sealed record TrackRecord(TrackRecordSource Source, int WindowWeeks, deci
 public sealed class ForecastEvaluator(IServiceScopeFactory scopeFactory, IOptions<ForecastOptions> options, TimeProvider timeProvider)
 {
     private const int PercentDecimals = 4;
+
+    /// <summary>The first evaluated day may fall a few days into the window (weekends, a forecast's first step).</summary>
+    private const int WindowStartToleranceDays = 7;
 
     /// <summary>Scores one forecast day against its actual close; errors are absolute, in percent of the actual close.</summary>
     public static ForecastEvaluation Evaluate(Guid forecastId, ForecastPoint point, decimal lastCloseUsd, decimal actualCloseUsd)
@@ -72,13 +78,14 @@ public sealed class ForecastEvaluator(IServiceScopeFactory scopeFactory, IOption
         return await InsertNewAsync(db, evaluations, cancellationToken);
     }
 
-    /// <summary>The asset's live track record over the window, or null while it has too few evaluations.</summary>
-    public async Task<TrackRecord?> ReadLiveTrackRecordAsync(Guid assetId, CancellationToken cancellationToken)
+    /// <summary>
+    /// The asset's live track record over the window, or null until its evaluations span the whole
+    /// window, so "over the last 8 weeks of our published forecasts" is never said of a few days.
+    /// </summary>
+    public async Task<TrackRecord?> ReadLiveTrackRecordAsync(MarketlensDbContext db, Guid assetId, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(db);
         var windowStart = WindowStart(Today());
-
-        await using var scope = scopeFactory.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<MarketlensDbContext>();
         var summary = await (
                 from evaluation in db.ForecastEvaluations
                 join forecast in db.Forecasts on evaluation.ForecastId equals forecast.Id
@@ -90,9 +97,10 @@ public sealed class ForecastEvaluator(IServiceScopeFactory scopeFactory, IOption
                     InsideCount = evaluations.Count(evaluation => evaluation.IsInsideRange80),
                     MeanErrorPct = evaluations.Average(evaluation => evaluation.ErrorPct),
                     BaselineErrorPct = evaluations.Average(evaluation => evaluation.BaselineErrorPct),
+                    OldestTargetDate = evaluations.Min(evaluation => evaluation.TargetDate),
                 })
             .SingleOrDefaultAsync(cancellationToken);
-        if (summary is null || summary.Count < options.Value.MinLiveEvaluations)
+        if (summary is null || summary.OldestTargetDate > windowStart.AddDays(WindowStartToleranceDays))
         {
             return null;
         }

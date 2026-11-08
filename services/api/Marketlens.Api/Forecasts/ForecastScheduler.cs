@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 
 using Marketlens.Api.Data;
@@ -12,7 +13,9 @@ namespace Marketlens.Api.Forecasts;
 /// Keeps every asset's forecast current (D55). Each check, at startup and then every
 /// <see cref="ForecastOptions.CheckInterval"/>, first evaluates past forecasts, then forecasts each
 /// asset with a complete daily close newer than its latest forecast's input. So forecasts follow
-/// the daily close, and a fresh database fills within minutes of its history arriving.
+/// the daily close, and a fresh database fills within minutes of its history arriving. An asset
+/// the forecaster refuses or fails on is left alone until its next close, so a broken series isn't
+/// backtested again at every check.
 /// </summary>
 public sealed partial class ForecastScheduler(
     ForecasterClient forecaster,
@@ -29,6 +32,9 @@ public sealed partial class ForecastScheduler(
     /// <summary>A fresh database gets its first forecasts for the few coins and funds before ~160 currencies.</summary>
     private static readonly AssetClass[] ForecastOrder = [AssetClass.Crypto, AssetClass.Etf, AssetClass.Stock, AssetClass.Fiat];
 
+    /// <summary>Assets that failed for their newest close; in memory, so a restart retries each once.</summary>
+    private readonly ConcurrentDictionary<Guid, FailedSeries> failedSeriesByAsset = new();
+
     public static ForecastFrequency FrequencyOf(AssetClass assetClass) =>
         assetClass == AssetClass.Crypto ? ForecastFrequency.Daily : ForecastFrequency.BusinessDays;
 
@@ -38,14 +44,20 @@ public sealed partial class ForecastScheduler(
             ? horizonDays
             : Enumerable.Range(1, horizonDays).Count(day => IsWeekday(seriesEnd.AddDays(day)));
 
-    /// <summary>Whether an asset's daily closes reach back far enough to be forecast; the endpoint's "pending" versus "insufficient history".</summary>
-    public async Task<bool> HasEnoughHistoryAsync(Guid assetId, CancellationToken cancellationToken)
+    /// <summary>
+    /// Whether an asset can be forecast: its daily closes reach back far enough, and the forecaster
+    /// hasn't refused its series as too short. The endpoint's "pending" versus "insufficient history".
+    /// </summary>
+    public async Task<bool> HasEnoughHistoryAsync(MarketlensDbContext db, Guid assetId, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(db);
+        if (failedSeriesByAsset.TryGetValue(assetId, out var failed) && failed.IsTooShort)
+        {
+            return false;
+        }
+
         var historyStartUtc = HistoryStart(Today()).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
         var latestAcceptedStartUtc = historyStartUtc.AddDays(HistoryStartToleranceDays);
-
-        await using var scope = scopeFactory.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<MarketlensDbContext>();
         return await db.PriceCandles.AnyAsync(
             candle => candle.AssetId == assetId && candle.Interval == CandleInterval.OneDay && candle.BucketStartUtc >= historyStartUtc && candle.BucketStartUtc <= latestAcceptedStartUtc,
             cancellationToken);
@@ -78,24 +90,34 @@ public sealed partial class ForecastScheduler(
         var staleAssets = await FindStaleAsync(today, cancellationToken);
 
         var forecastCount = 0;
-        foreach (var listing in staleAssets)
+        foreach (var (listing, newestClose) in staleAssets)
         {
-            // Failures that concern one series are logged and the run moves on; the forecaster being
-            // unreachable (HttpRequestException) ends the run, since every other asset would fail too.
+            // A failure that concerns one series is logged, the asset waits for its next close, and
+            // the run moves on. Not reaching the forecaster at all (no HTTP status) ends the run,
+            // since every other asset would fail too.
+            // History that doesn't reach back yet is not remembered: checking it costs one read, and
+            // a backfill may still be filling it in.
             try
             {
-                forecastCount += await ForecastAsync(listing, today, cancellationToken) ? 1 : 0;
+                if (await ForecastAsync(listing, today, cancellationToken))
+                {
+                    forecastCount++;
+                    failedSeriesByAsset.TryRemove(listing.Id, out _);
+                }
             }
             catch (ForecasterRefusedException error)
             {
+                failedSeriesByAsset[listing.Id] = new FailedSeries(newestClose, IsTooShort: true);
                 LogRefused(logger, listing.Key, error.Message);
             }
-            catch (Exception error) when (error is InvalidDataException or JsonException)
+            catch (Exception error) when (error is InvalidDataException or JsonException or HttpRequestException { StatusCode: not null })
             {
-                LogInvalidAnswer(logger, error, listing.Key);
+                failedSeriesByAsset[listing.Id] = new FailedSeries(newestClose, IsTooShort: false);
+                LogFailedForAsset(logger, error, listing.Key);
             }
             catch (TaskCanceledException error) when (!cancellationToken.IsCancellationRequested)
             {
+                failedSeriesByAsset[listing.Id] = new FailedSeries(newestClose, IsTooShort: false);
                 LogTimedOut(logger, error, listing.Key, options.Value.RequestTimeout);
             }
         }
@@ -103,8 +125,11 @@ public sealed partial class ForecastScheduler(
         LogRun(logger, staleAssets.Count, forecastCount, evaluatedCount, prunedCount);
     }
 
-    /// <summary>Active assets whose newest complete close (on their own calendar) is newer than their latest forecast's input.</summary>
-    private async Task<List<CatalogEntry>> FindStaleAsync(DateOnly today, CancellationToken cancellationToken)
+    /// <summary>
+    /// Active assets whose newest complete close (on their own calendar) is newer than their latest
+    /// forecast's input and hasn't already failed, each with that close.
+    /// </summary>
+    private async Task<List<(CatalogEntry Listing, DateOnly NewestClose)>> FindStaleAsync(DateOnly today, CancellationToken cancellationToken)
     {
         var todayUtc = today.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
 
@@ -122,9 +147,10 @@ public sealed partial class ForecastScheduler(
 
         return ForecastOrder
             .SelectMany(assetClass => catalog.ActiveOf(assetClass))
-            .Where(listing => newestCloseByAsset.TryGetValue(listing.Id, out var newestClose)
-                && (!forecastEndByAsset.TryGetValue(listing.Id, out var forecastEnd)
-                    || LastTradingDay(newestClose, FrequencyOf(listing.Key.Class)) > forecastEnd))
+            .Where(listing => newestCloseByAsset.ContainsKey(listing.Id))
+            .Select(listing => (Listing: listing, NewestClose: LastTradingDay(newestCloseByAsset[listing.Id], FrequencyOf(listing.Key.Class))))
+            .Where(due => (!forecastEndByAsset.TryGetValue(due.Listing.Id, out var forecastEnd) || due.NewestClose > forecastEnd)
+                && !(failedSeriesByAsset.TryGetValue(due.Listing.Id, out var failed) && failed.NewestClose == due.NewestClose))
             .ToList();
     }
 
@@ -217,16 +243,20 @@ public sealed partial class ForecastScheduler(
 
     private DateOnly HistoryStart(DateOnly today) => today.AddDays(-options.Value.HistoryDays);
 
+    /// <param name="NewestClose">The close the attempt was for; a newer one makes the asset due again.</param>
+    /// <param name="IsTooShort">The forecaster refused the series as too short or malformed, rather than a failure that may pass.</param>
+    private sealed record FailedSeries(DateOnly NewestClose, bool IsTooShort);
+
     [LoggerMessage(Level = LogLevel.Information, Message = "Forecast check: {StaleCount} assets due, {ForecastCount} forecast, {EvaluatedCount} days evaluated, {PrunedCount} old forecasts deleted")]
     private static partial void LogRun(ILogger logger, int staleCount, int forecastCount, int evaluatedCount, int prunedCount);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "No forecast for {Asset}: {Reason}")]
     private static partial void LogRefused(ILogger logger, AssetKey asset, string reason);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "The forecaster's answer for {Asset} was rejected; it is retried at the next check")]
-    private static partial void LogInvalidAnswer(ILogger logger, Exception error, AssetKey asset);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The forecast for {Asset} failed; it is retried after its next daily close")]
+    private static partial void LogFailedForAsset(ILogger logger, Exception error, AssetKey asset);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "The forecast for {Asset} took longer than {Timeout}; it is retried at the next check")]
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The forecast for {Asset} took longer than {Timeout}; it is retried after its next daily close")]
     private static partial void LogTimedOut(ILogger logger, Exception error, AssetKey asset, TimeSpan timeout);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Forecast check failed; retrying in {RetryDelay}")]

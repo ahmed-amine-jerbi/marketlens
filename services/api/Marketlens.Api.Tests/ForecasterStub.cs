@@ -16,12 +16,19 @@ public sealed class ForecasterStub : HttpMessageHandler
     /// <summary>The asset whose backtest never beats "no change".</summary>
     public static readonly AssetKey NotBetterAsset = AssetKey.Parse("stock:MSFT");
 
+    /// <summary>The asset the forecaster fails on with a 500, as when a model crashes on one series.</summary>
+    public static readonly AssetKey FailingAsset = AssetKey.Parse("etf:QQQ");
+
     public const string ChosenModel = "AutoETS";
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         var forecastRequest = await request.Content!.ReadFromJsonAsync<ForecasterRequest>(ForecasterClient.Json, cancellationToken)
             ?? throw new InvalidOperationException("The forecaster stub got an empty request.");
+        if (forecastRequest.AssetKey == FailingAsset)
+        {
+            return new HttpResponseMessage(HttpStatusCode.InternalServerError) { RequestMessage = request };
+        }
 
         return new HttpResponseMessage(HttpStatusCode.OK)
         {

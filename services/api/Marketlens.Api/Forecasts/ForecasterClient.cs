@@ -17,11 +17,11 @@ public sealed class ForecastOptions
     /// <summary>Calendar days ahead; crypto forecasts every day, the other classes their business days.</summary>
     public int HorizonDays { get; set; } = 7;
 
-    /// <summary>Weeks of rolling backtest windows, and of live evaluations in the track record.</summary>
+    /// <summary>
+    /// Weeks of rolling backtest windows, and of live evaluations in the track record, which switches
+    /// to live results once they span these weeks.
+    /// </summary>
     public int BacktestWeeks { get; set; } = 8;
-
-    /// <summary>Live evaluations an asset needs before its track record switches from the backtest to live results.</summary>
-    public int MinLiveEvaluations { get; set; } = 20;
 
     /// <summary>Days of daily closes sent to the forecaster; an asset with less history has no forecast.</summary>
     public int HistoryDays { get; set; } = 730;

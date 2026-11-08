@@ -142,11 +142,15 @@ builder.Services.Configure<ForecastOptions>(forecasts =>
     }
 });
 builder.Services.AddHttpClient<ForecasterClient>((services, http) =>
-{
-    var forecasts = services.GetRequiredService<IOptions<ForecastOptions>>().Value;
-    http.BaseAddress = forecasts.BaseUrl;
-    http.Timeout = forecasts.RequestTimeout;
-});
+    {
+        var forecasts = services.GetRequiredService<IOptions<ForecastOptions>>().Value;
+        http.BaseAddress = forecasts.BaseUrl;
+        http.Timeout = forecasts.RequestTimeout;
+    })
+    // The scheduler holds this client for the life of the process; recycling pooled connections
+    // finds a recreated forecaster container at its new address.
+    .UseSocketsHttpHandler((handler, _) => handler.PooledConnectionLifetime = TimeSpan.FromMinutes(15))
+    .SetHandlerLifetime(Timeout.InfiniteTimeSpan);
 builder.Services.AddSingleton<ForecastEvaluator>();
 builder.Services.AddSingleton<ForecastScheduler>();
 builder.Services.AddHostedService(services => services.GetRequiredService<ForecastScheduler>());

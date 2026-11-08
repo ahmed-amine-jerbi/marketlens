@@ -48,6 +48,17 @@ public sealed class ForecastSchedulerTests(MarketlensApiFactory factory)
     }
 
     [Fact]
+    public void A_forecast_is_current_while_one_of_its_days_is_today_or_later()
+    {
+        var forecast = StoredForecast(beatsBaseline: true);
+        forecast.Points.Add(Point(new DateOnly(2026, 11, 9), median: 100m, low80: 95m, high80: 105m));
+        forecast.Points.Add(Point(new DateOnly(2026, 11, 10), median: 100m, low80: 95m, high80: 105m));
+
+        Assert.True(ForecastEndpoints.IsCurrent(forecast, new DateOnly(2026, 11, 10)));
+        Assert.False(ForecastEndpoints.IsCurrent(forecast, new DateOnly(2026, 11, 11)));
+    }
+
+    [Fact]
     public void A_forecast_day_is_scored_against_its_close_and_against_no_change()
     {
         var point = Point(new DateOnly(2026, 11, 2), median: 102m, low80: 99m, high80: 101m);
@@ -150,29 +161,74 @@ public sealed class ForecastSchedulerTests(MarketlensApiFactory factory)
     }
 
     [Fact]
-    public async Task Once_enough_past_days_are_evaluated_the_track_record_comes_from_live_results()
+    public async Task Evaluated_days_that_span_the_whole_window_make_the_track_record_live()
+    {
+        var amazon = AssetKey.Parse("stock:AMZN");
+        using var client = factory.CreateClient();
+        await EventuallyAvailableAsync(client, $"/api/v1/assets/{amazon}/forecast");
+        var windowStart = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-8 * 7);
+        var closesFromWindowStart = (await ReadClosesAsync(amazon, windowStart.AddDays(1))).Take(35).ToList();
+
+        // 26 days on the median and inside the range, 9 at 2.5 times the close and outside it:
+        // 74.2857% coverage, mean error (9 × 150%) / 35 = 38.5714%, far worse than no change.
+        await StorePastForecastAsync(amazon, closesFromWindowStart.Select((close, index) => index < 26
+            ? Point(close.Date, median: close.CloseUsd, low80: close.CloseUsd * 0.5m, high80: close.CloseUsd * 2m)
+            : Point(close.Date, median: close.CloseUsd * 2.5m, low80: close.CloseUsd * 2m, high80: close.CloseUsd * 3m)));
+        var evaluator = factory.Services.GetRequiredService<ForecastEvaluator>();
+        await evaluator.EvaluateDueAsync(TestContext.Current.CancellationToken);
+
+        var forecast = await GetJsonAsync(client, $"/api/v1/assets/{amazon}/forecast");
+
+        var trackRecord = forecast.GetProperty("trackRecord");
+        Assert.Equal("live", trackRecord.GetProperty("source").GetString());
+        Assert.Equal(8, trackRecord.GetProperty("windowWeeks").GetInt32());
+        Assert.Equal("74.2857", trackRecord.GetProperty("coverage80Pct").GetString());
+        Assert.Equal("38.5714", trackRecord.GetProperty("meanErrorPct").GetString());
+        Assert.False(trackRecord.GetProperty("beatsBaseline").GetBoolean());
+    }
+
+    [Fact]
+    public async Task A_few_weeks_of_evaluated_days_keep_the_backtest_record_and_are_never_evaluated_twice()
     {
         var nvidia = AssetKey.Parse("stock:NVDA");
         using var client = factory.CreateClient();
         await EventuallyAvailableAsync(client, $"/api/v1/assets/{nvidia}/forecast");
-        var pastCloses = await ReadRecentClosesAsync(nvidia, count: 21);
+        var recentCloses = (await ReadClosesAsync(nvidia, DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-30))).TakeLast(21);
+        await StorePastForecastAsync(nvidia, recentCloses.Select(close => Point(close.Date, close.CloseUsd, close.CloseUsd * 0.5m, close.CloseUsd * 2m)));
+        var evaluator = factory.Services.GetRequiredService<ForecastEvaluator>();
 
-        // 15 days on the median and inside the range, 6 at 2.5 times the close and outside it:
-        // 71.4286% coverage, mean error (6 × 150%) / 21 = 42.8571%, far worse than no change.
-        await StorePastForecastAsync(nvidia, pastCloses.Select((close, index) => index < 15
-            ? Point(close.Date, median: close.CloseUsd, low80: close.CloseUsd * 0.5m, high80: close.CloseUsd * 2m)
-            : Point(close.Date, median: close.CloseUsd * 2.5m, low80: close.CloseUsd * 2m, high80: close.CloseUsd * 3m)));
-        var evaluatedCount = await factory.Services.GetRequiredService<ForecastEvaluator>().EvaluateDueAsync(TestContext.Current.CancellationToken);
-
+        var evaluatedCount = await evaluator.EvaluateDueAsync(TestContext.Current.CancellationToken);
         var forecast = await GetJsonAsync(client, $"/api/v1/assets/{nvidia}/forecast");
 
         Assert.Equal(21, evaluatedCount);
-        var trackRecord = forecast.GetProperty("trackRecord");
-        Assert.Equal("live", trackRecord.GetProperty("source").GetString());
-        Assert.Equal("71.4286", trackRecord.GetProperty("coverage80Pct").GetString());
-        Assert.Equal("42.8571", trackRecord.GetProperty("meanErrorPct").GetString());
-        Assert.False(trackRecord.GetProperty("beatsBaseline").GetBoolean());
-        Assert.Equal(0, await factory.Services.GetRequiredService<ForecastEvaluator>().EvaluateDueAsync(TestContext.Current.CancellationToken));
+        Assert.Equal("backtest", forecast.GetProperty("trackRecord").GetProperty("source").GetString());
+        Assert.Equal(0, await evaluator.EvaluateDueAsync(TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task An_asset_the_forecaster_fails_on_waits_for_its_next_close_and_the_others_still_get_forecasts()
+    {
+        using var client = factory.CreateClient();
+        var etfPage = await GetJsonAsync(client, "/api/v1/assets?class=etf&limit=200");
+        var otherEtfs = etfPage.GetProperty("items").EnumerateArray()
+            .Select(item => item.GetProperty("key").GetString()!)
+            .Where(key => key != ForecasterStub.FailingAsset.ToString())
+            .ToList();
+
+        // The ETFs' history arrives together, so they become due in the same run; a failure that
+        // ended the run would leave every ETF after the failing one without a forecast.
+        var etfStatuses = new List<string>();
+        foreach (var etf in otherEtfs)
+        {
+            etfStatuses.Add((await EventuallyAvailableAsync(client, $"/api/v1/assets/{etf}/forecast")).GetProperty("status").GetString()!);
+        }
+
+        var failing = await GetJsonAsync(client, $"/api/v1/assets/{ForecasterStub.FailingAsset}/forecast");
+
+        Assert.Equal(11, otherEtfs.Count);
+        Assert.All(etfStatuses, status => Assert.Equal("available", status));
+        Assert.Equal("pending", failing.GetProperty("status").GetString());
+        Assert.Equal(0, failing.GetProperty("points").GetArrayLength());
     }
 
     private static Forecast StoredForecast(bool beatsBaseline) => new()
@@ -196,19 +252,20 @@ public sealed class ForecastSchedulerTests(MarketlensApiFactory factory)
         High95Usd = high80 * 1.1m,
     };
 
-    private async Task<List<(DateOnly Date, decimal CloseUsd)>> ReadRecentClosesAsync(AssetKey asset, int count)
+    /// <summary>The asset's complete daily closes from <paramref name="fromDate"/> to yesterday, oldest first.</summary>
+    private async Task<List<(DateOnly Date, decimal CloseUsd)>> ReadClosesAsync(AssetKey asset, DateOnly fromDate)
     {
         await using var scope = factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<MarketlensDbContext>();
+        var fromUtc = fromDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
         var todayUtc = DateTime.UtcNow.Date;
         var closes = await db.PriceCandles
-            .Where(candle => candle.Interval == CandleInterval.OneDay && candle.BucketStartUtc < todayUtc && db.Assets.Any(row => row.Id == candle.AssetId && row.Key == asset.ToString()))
-            .OrderByDescending(candle => candle.BucketStartUtc)
-            .Take(count)
+            .Where(candle => candle.Interval == CandleInterval.OneDay && candle.BucketStartUtc >= fromUtc && candle.BucketStartUtc < todayUtc && db.Assets.Any(row => row.Id == candle.AssetId && row.Key == asset.ToString()))
+            .OrderBy(candle => candle.BucketStartUtc)
             .Select(candle => new { candle.BucketStartUtc, candle.CloseUsd })
             .ToListAsync(TestContext.Current.CancellationToken);
 
-        return closes.Select(close => (DateOnly.FromDateTime(close.BucketStartUtc), close.CloseUsd)).Reverse().ToList();
+        return closes.Select(close => (DateOnly.FromDateTime(close.BucketStartUtc), close.CloseUsd)).ToList();
     }
 
     private async Task StorePastForecastAsync(AssetKey asset, IEnumerable<ForecastPoint> points)

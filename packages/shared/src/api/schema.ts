@@ -238,7 +238,7 @@ export interface components {
             /** Format: int32 */
             horizonDays: number | string;
             points: components["schemas"]["ForecastPointResponse"][];
-            trackRecord: null | components["schemas"]["TrackRecordResponse"];
+            trackRecord: null | components["schemas"]["TrackRecord"];
         };
         /** @enum {unknown} */
         ForecastStatus: "available" | "insufficient-history" | "pending";
@@ -301,8 +301,11 @@ export interface components {
             stockData: string;
             sources: components["schemas"]["SourceStatus"][];
         };
-        /** @description How the forecasts did: share of real closes inside the 80% range, and errors next to "no change". */
-        TrackRecordResponse: {
+        /**
+         * @description How the forecasts did: share of real closes inside the 80% range, and the typical miss next to
+         *     "no change"'s; bool TrackRecord.BeatsBaseline is true when the forecasts' error is the lower one.
+         */
+        TrackRecord: {
             source: components["schemas"]["TrackRecordSource"];
             /** Format: int32 */
             windowWeeks: number | string;

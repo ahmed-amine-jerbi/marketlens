@@ -47,6 +47,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      # The first forecast check runs at startup; without this it would find the service still loading.
+      forecaster:
+        condition: service_healthy
 
   # Computes forecasts for the API. No published port: only services on this network reach it.
   forecaster:
