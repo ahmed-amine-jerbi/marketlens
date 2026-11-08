@@ -1,7 +1,10 @@
+using Marketlens.Api.MarketData;
 using Marketlens.Api.Tests;
 
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
 
 using Testcontainers.PostgreSql;
 
@@ -11,7 +14,8 @@ namespace Marketlens.Api.Tests;
 
 /// <summary>
 /// One API host for the test assembly, backed by a throwaway PostgreSQL container, so integration
-/// tests never touch a developer's local database. Requires Docker.
+/// tests never touch a developer's local database, and with providers answered from recorded
+/// fixtures, so tests never call a live provider. Requires Docker.
 /// </summary>
 public sealed class MarketlensApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
@@ -30,6 +34,8 @@ public sealed class MarketlensApiFactory : WebApplicationFactory<Program>, IAsyn
     {
         builder.UseEnvironment("Testing");
         builder.UseSetting("DATABASE_URL", postgres.GetConnectionString());
+        builder.ConfigureTestServices(services =>
+            services.AddHttpClient<FrankfurterClient>().ConfigurePrimaryHttpMessageHandler(() => new ProviderFixtures()));
     }
 
     public override async ValueTask DisposeAsync()
