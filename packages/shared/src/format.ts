@@ -13,8 +13,8 @@ export function isLanguage(value: string | null | undefined): value is Language 
 const MINUS_SIGN = "\u2212";
 
 /**
- * A price with precision that suits its size: 87,412.55 / 1.0832 / 0.00001234. Large values get
- * two decimals; values from 1 to 1,000 up to four; below 1, four significant digits.
+ * A price with precision that suits its size: 87,412.55 / 115.42 / 1.0832 / 0.00001234. From 10 up,
+ * two decimals; from 1 to 10 up to four (exchange rates need them); below 1, four significant digits.
  */
 export function formatPrice(value: string, language: Language): string {
   const amount = Number(value);
@@ -24,7 +24,7 @@ export function formatPrice(value: string, language: Language): string {
 
   const magnitude = Math.abs(amount);
   const options: Intl.NumberFormatOptions =
-    magnitude >= 1000
+    magnitude >= 10
       ? { minimumFractionDigits: 2, maximumFractionDigits: 2 }
       : magnitude >= 1
         ? { minimumFractionDigits: 2, maximumFractionDigits: 4 }

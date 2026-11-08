@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query";
 
 import { api, unwrap, type AssetClass } from "./client";
 import { storeQuotes } from "./liveQuotes";
@@ -33,6 +33,36 @@ export function useAssets(assetClass?: AssetClass, search?: string) {
       ).items,
     staleTime: ONE_HOUR,
     placeholderData: keepPreviousData,
+  });
+}
+
+const assetClasses: readonly AssetClass[] = ["fiat", "crypto", "stock", "etf"];
+
+/**
+ * Every tracked asset. Loaded class by class: one page holds at most 200 assets, and all classes
+ * together are more than that.
+ */
+export function useAllAssets() {
+  return useQueries({
+    queries: assetClasses.map((assetClass) => ({
+      queryKey: ["assets", assetClass, ""],
+      queryFn: async ({ signal }: { signal: AbortSignal }) =>
+        unwrap(
+          await api.GET("/api/v1/assets", {
+            params: { query: { class: assetClass, limit: PAGE_SIZE } },
+            signal,
+          }),
+        ).items,
+      staleTime: ONE_HOUR,
+    })),
+    combine: (results) => ({
+      data: results.every((result) => result.isSuccess)
+        ? results.flatMap((result) => result.data)
+        : undefined,
+      isPending: results.some((result) => result.isPending),
+      isError: results.some((result) => result.isError),
+      refetch: () => Promise.all(results.map((result) => result.refetch())),
+    }),
   });
 }
 
