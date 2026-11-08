@@ -1,0 +1,41 @@
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+.claude/settings.local.json
+
+# Node
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+playwright-report/
+test-results/
+
+# Expo / React Native
+.expo/
+apps/mobile/android/
+apps/mobile/ios/
+google-services.json
+
+# .NET
+bin/
+obj/
+*.user
+TestResults/
+
+# Python
+__pycache__/
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Data downloaded at runtime
+*.mmdb
+
+# Editors and OS
+.vs/
+.idea/
+.DS_Store
+Thumbs.db
