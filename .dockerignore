@@ -1,0 +1,12 @@
+# Keeps build contexts small and free of local state and secrets.
+.git
+.env
+.env.*
+**/node_modules
+**/dist
+**/bin
+**/obj
+**/.venv
+**/TestResults
+docs
+.claude

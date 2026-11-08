@@ -25,9 +25,9 @@ export function ConverterPanel({
   const { t } = useTranslation();
   const { language, displayCurrency } = useSettings();
   const [from, setFrom] = useState(initialFrom);
-  const [to, setTo] = useState(
-    initialTo ?? (displayCurrency === initialFrom ? "fiat:USD" : displayCurrency),
-  );
+  // Follows the display currency (which can arrive after the first render) until the visitor picks one.
+  const [chosenTo, setTo] = useState<string | null>(initialTo ?? null);
+  const to = chosenTo ?? (displayCurrency === from ? "fiat:USD" : displayCurrency);
   const [amountText, setAmountText] = useState("1");
   const amountId = useId();
 

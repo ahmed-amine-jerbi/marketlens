@@ -1,5 +1,5 @@
-# Local development stack. `docker compose up` needs no .env: every value has a local default.
-# Ports bind to 127.0.0.1 only, so nothing is exposed to the network.
+# Local stack. `docker compose up --build` needs no .env: every value has a local default.
+# The web app is at http://localhost:8080; ports bind to 127.0.0.1 only.
 name: marketlens
 
 services:
@@ -30,6 +30,37 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  api:
+    build: services/api
+    environment:
+      DATABASE_URL: Host=postgres;Port=5432;Database=${POSTGRES_DB:-marketlens};Username=${POSTGRES_USER:-marketlens};Password=${POSTGRES_PASSWORD:-change-me-local-only}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8080}
+      # Only nginx, on this network, may set the client IP (D35).
+      ForwardedHeaders__KnownNetworks__0: 172.28.0.0/16
+      FINNHUB_API_KEY: ${FINNHUB_API_KEY:-}
+      TWELVEDATA_API_KEY: ${TWELVEDATA_API_KEY:-}
+      COINGECKO_DEMO_API_KEY: ${COINGECKO_DEMO_API_KEY:-}
+      BINANCE_MARKET_DATA_BASE_URL: ${BINANCE_MARKET_DATA_BASE_URL:-https://data-api.binance.vision}
+      BINANCE_STREAM_BASE_URL: ${BINANCE_STREAM_BASE_URL:-wss://data-stream.binance.vision}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      - api
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
 
 volumes:
   postgres-data:

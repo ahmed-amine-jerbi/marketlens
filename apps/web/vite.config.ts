@@ -8,6 +8,8 @@ const apiOrigin = process.env.MARKETLENS_API_ORIGIN ?? "http://localhost:5080";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // Built files go to /static/ so they never collide with the app's own /assets/<key> pages.
+  build: { assetsDir: "static" },
   server: {
     port: 5173,
     proxy: {

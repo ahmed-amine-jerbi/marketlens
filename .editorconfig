@@ -14,18 +14,5 @@ trim_trailing_whitespace = false
 [*.py]
 indent_size = 4
 
-[*.{cs,csx}]
-indent_size = 4
-dotnet_sort_system_directives_first = true
-csharp_style_namespace_declarations = file_scoped:warning
-csharp_style_var_for_built_in_types = true:suggestion
-csharp_style_var_when_type_is_apparent = true:suggestion
-csharp_prefer_braces = true:warning
-dotnet_style_readonly_field = true:warning
-dotnet_diagnostic.IDE0005.severity = warning
-
 [*.{csproj,props,targets,slnx}]
 indent_size = 2
-
-[services/api/**/Migrations/*.cs]
-generated_code = true
