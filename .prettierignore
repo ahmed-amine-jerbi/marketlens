@@ -1,0 +1,10 @@
+# Hand-wrapped prose and the dev kit keep their own formatting.
+*.md
+.claude/
+
+# Formatted by their own toolchains (dotnet format, Ruff).
+services/
+
+# Generated.
+package-lock.json
+packages/shared/src/api/schema.ts

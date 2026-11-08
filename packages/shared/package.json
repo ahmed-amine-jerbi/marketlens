@@ -1,0 +1,15 @@
+{
+  "name": "@marketlens/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Design tokens, UI strings, formatting and API types shared by the Marketlens web and mobile apps.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    "./tokens": "./src/tokens.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  }
+}
