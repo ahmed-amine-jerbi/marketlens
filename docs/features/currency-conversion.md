@@ -4,7 +4,7 @@
 > every price in the user's display currency, with all the arithmetic done once, on the server.
 
 **Status:** shipped on the web (M3); mobile in M7 · **Owner area:**
-`services/api/Marketlens.Api/Conversions/` · **Last updated:** 2026-11-08
+`services/api/Marketlens.Api/Conversions/` · **Last updated:** 2026-11-09
 
 This is the project's **reference implementation** (D41): new features copy its shape: a thin
 endpoint that validates input and answers with typed results, a pure rule class with unit tests,
@@ -111,7 +111,9 @@ Full contract: [openapi/v1.json](../../services/api/openapi/v1.json).
 
 - Same asset both sides → rate exactly 1, change 0.
 - A leg without a reference price → `changePct` is null.
-- USDT is treated as 1 USD; the data-sources page will say so (M3).
+- Coins are priced in real USD: ingestion converts Binance's USDT prices at the daily USDT rate
+  ([ADR 0007](../adr/0007-usdt-priced-in-usd.md)). Crypto-to-crypto rates don't depend on it (it
+  cancels out). Tether (`crypto:USDT`) is convertible like any coin, at its daily price.
 
 ## Testing
 
@@ -135,3 +137,4 @@ A new asset needs nothing here. A new kind of answer (for example fees) belongs 
 
 - 2026-11-08 — Created (marketlens-v1, M2).
 - 2026-11-08 — Web converter (M3).
+- 2026-11-09 — USDT no longer counted as 1 USD; Tether convertible (price-and-forecast-accuracy).

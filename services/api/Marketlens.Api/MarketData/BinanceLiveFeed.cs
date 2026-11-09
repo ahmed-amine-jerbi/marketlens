@@ -10,12 +10,14 @@ namespace Marketlens.Api.MarketData;
 /// <summary>
 /// Live crypto prices: one WebSocket to Binance's combined mini-ticker stream for every listed coin,
 /// shared by all viewers. Each frame carries the last price and the price 24 hours earlier, which is
-/// the rolling-24h change basis for crypto (D40). Reconnects with backoff; Binance also closes every
-/// connection after 24 hours by design.
+/// the rolling-24h change basis for crypto (D40). Prices arrive in USDT and are converted to USD at
+/// the latest USDT rate; until one is known, ticks are dropped rather than shown at 1 USDT = 1 USD.
+/// Reconnects with backoff; Binance also closes every connection after 24 hours by design.
 /// </summary>
 public sealed partial class BinanceLiveFeed(
     AssetCatalog catalog,
     QuoteBook quoteBook,
+    UsdtRates usdtRates,
     IOptions<BinanceOptions> options,
     TimeProvider timeProvider,
     ILogger<BinanceLiveFeed> logger) : BackgroundService
@@ -26,7 +28,8 @@ public sealed partial class BinanceLiveFeed(
 
     /// <summary>
     /// Reads one combined-stream frame (<c>{"stream": "...", "data": {"e": "24hrMiniTicker", ...}}</c>).
-    /// Returns null for a frame that isn't a mini-ticker for a listed coin.
+    /// Returns null for a frame that isn't a mini-ticker for a listed coin. The tick's prices are
+    /// still in USDT: the feed converts them with <see cref="UsdtRates"/> before applying them.
     /// </summary>
     public static PriceTick? ParseFrame(ReadOnlySpan<byte> utf8Frame, IReadOnlyDictionary<string, AssetKey> assetByBinanceSymbol)
     {
@@ -113,6 +116,7 @@ public sealed partial class BinanceLiveFeed(
         LogConnected(logger, assetByBinanceSymbol.Count);
 
         var frame = new ArrayBufferWriter<byte>(ReceiveBufferBytes);
+        var hasLoggedWaitingForRate = false;
         while (socket.State == WebSocketState.Open && !cancellationToken.IsCancellationRequested)
         {
             frame.ResetWrittenCount();
@@ -130,10 +134,20 @@ public sealed partial class BinanceLiveFeed(
                 return;
             }
 
-            if (ParseFrame(frame.WrittenSpan, assetByBinanceSymbol) is { } tick)
+            if (ParseFrame(frame.WrittenSpan, assetByBinanceSymbol) is not { } usdtTick)
             {
-                quoteBook.Apply(tick);
-                backoff.Reset();
+                continue;
+            }
+
+            backoff.Reset();
+            if (usdtRates.TryConvert(usdtTick, out var usdTick))
+            {
+                quoteBook.Apply(usdTick);
+            }
+            else if (!hasLoggedWaitingForRate)
+            {
+                LogWaitingForUsdtRate(logger);
+                hasLoggedWaitingForRate = true;
             }
         }
     }
@@ -152,6 +166,9 @@ public sealed partial class BinanceLiveFeed(
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Binance closed the stream ({CloseStatus}: {Reason}); reconnecting")]
     private static partial void LogClosedByProvider(ILogger logger, WebSocketCloseStatus? closeStatus, string? reason);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Binance ticks are held back until the first USDT rate arrives")]
+    private static partial void LogWaitingForUsdtRate(ILogger logger);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Binance stream failed; reconnecting with backoff")]
     private static partial void LogStreamFailed(ILogger logger, Exception error);

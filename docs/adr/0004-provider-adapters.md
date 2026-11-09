@@ -1,6 +1,7 @@
 # 0004 — One adapter per data provider, USD as the pivot
 
-- **Status:** accepted, 2026-11-08
+- **Status:** accepted, 2026-11-08. "USDT is treated as 1 USD" superseded by
+  [0007](0007-usdt-priced-in-usd.md) on 2026-11-09.
 
 ## Context
 

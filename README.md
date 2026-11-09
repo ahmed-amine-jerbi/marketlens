@@ -18,8 +18,8 @@ and how current it is. Prices are for information only, not financial advice.
 
 ## What it does
 
-- **Live prices** for 161 currencies, 30 major coins, and 50 US stocks and index ETFs. Crypto
-  updates every second; currencies use the daily reference rates central banks publish.
+- **Live prices** for 161 currencies, 30 major coins plus Tether, and 50 US stocks and index ETFs.
+  Crypto updates every second, in real US dollars; currencies use the daily reference rates central banks publish.
 - **Convert** any amount between any two assets: BTC → USD, EUR → JPY, ETH → BTC.
 - **Charts** from one day to five years.
 - **Forecast ranges** for the next seven days on every chart, with how often past ranges held and
@@ -49,7 +49,8 @@ graph LR
 - The **web app** displays and formats; it never computes prices or calls providers.
 - In Docker, **nginx** serves the web app and puts the API behind the same address.
 
-More in [docs/architecture.md](docs/architecture.md) and the decision records in
+New to the code? Start with the [project guide](docs/project-guide.md): the technologies and what
+every part does. More in [docs/architecture.md](docs/architecture.md) and the decision records in
 [docs/adr/](docs/adr/).
 
 ## Repository layout

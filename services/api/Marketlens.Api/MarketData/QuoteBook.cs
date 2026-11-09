@@ -109,6 +109,25 @@ public sealed class QuoteBook(TimeProvider timeProvider)
     public IReadOnlyCollection<UsdQuote> Snapshot() => latestQuotes.Values.ToList();
 
     /// <summary>
+    /// Drops every quote one source reported, silently: sample prices once real data takes over.
+    /// They carry the time they were made up, so left in place they would outrank an older real
+    /// price (a last trade before the close) until the next trade. Returns how many were dropped.
+    /// </summary>
+    public int RemoveBySource(string source)
+    {
+        var removedCount = 0;
+        foreach (var quote in latestQuotes.Values.Where(quote => quote.Source == source))
+        {
+            if (latestQuotes.TryRemove(new KeyValuePair<AssetKey, UsdQuote>(quote.Asset, quote)))
+            {
+                removedCount++;
+            }
+        }
+
+        return removedCount;
+    }
+
+    /// <summary>
     /// Puts saved quotes back after a restart without raising <see cref="QuoteUpdated"/>: they are
     /// history, not news. A quote the book already holds a newer price for is skipped.
     /// </summary>

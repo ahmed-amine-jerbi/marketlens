@@ -57,8 +57,9 @@ public sealed partial class SampleStockFeed(
         {
             if (finnhubOptions.Value.HasApiKey)
             {
-                var removedCount = await candleWriter.DeleteBySourceAsync(SourceName, stoppingToken);
-                LogSampleRemoved(logger, removedCount);
+                var removedQuoteCount = quoteBook.RemoveBySource(SourceName);
+                var removedCandleCount = await candleWriter.DeleteBySourceAsync(SourceName, stoppingToken);
+                LogSampleRemoved(logger, removedQuoteCount, removedCandleCount);
                 return;
             }
 
@@ -151,6 +152,6 @@ public sealed partial class SampleStockFeed(
     [LoggerMessage(Level = LogLevel.Warning, Message = "Sample stock history could not be written or removed")]
     private static partial void LogSampleHistoryFailed(ILogger logger, Exception error);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Finnhub key set: removed {CandleCount} sample candles")]
-    private static partial void LogSampleRemoved(ILogger logger, int candleCount);
+    [LoggerMessage(Level = LogLevel.Information, Message = "Finnhub key set: removed {QuoteCount} sample prices and {CandleCount} sample candles")]
+    private static partial void LogSampleRemoved(ILogger logger, int quoteCount, int candleCount);
 }

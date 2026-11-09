@@ -109,4 +109,27 @@ public sealed class BinanceTests : IDisposable
     }
 
     private static long ToUnixMs(DateTime utc) => (long)(utc - DateTime.UnixEpoch).TotalMilliseconds;
+
+    [Fact]
+    public void A_fill_continues_from_the_newest_bucket_when_the_stored_candles_reach_back_to_the_window_start()
+    {
+        var windowStartUtc = new DateTime(2021, 11, 9, 0, 0, 0, DateTimeKind.Utc);
+        var newestUtc = new DateTime(2026, 11, 8, 0, 0, 0, DateTimeKind.Utc);
+
+        var fromUtc = BinanceKlinesBackfill.FillStartUtc((windowStartUtc.AddDays(1), newestUtc), windowStartUtc, TimeSpan.FromDays(1));
+
+        Assert.Equal(newestUtc, fromUtc);
+    }
+
+    [Fact]
+    public void A_fill_starts_at_the_window_start_when_only_recent_buckets_are_stored()
+    {
+        var windowStartUtc = new DateTime(2021, 11, 9, 0, 0, 0, DateTimeKind.Utc);
+        var todayUtc = new DateTime(2026, 11, 9, 0, 0, 0, DateTimeKind.Utc);
+
+        var fromUtc = BinanceKlinesBackfill.FillStartUtc((todayUtc, todayUtc), windowStartUtc, TimeSpan.FromDays(1));
+
+        Assert.Equal(windowStartUtc, fromUtc);
+        Assert.Equal(windowStartUtc, BinanceKlinesBackfill.FillStartUtc(null, windowStartUtc, TimeSpan.FromDays(1)));
+    }
 }

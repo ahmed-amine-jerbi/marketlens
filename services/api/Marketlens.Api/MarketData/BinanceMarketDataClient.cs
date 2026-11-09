@@ -20,8 +20,8 @@ public sealed class BinanceOptions
 }
 
 /// <summary>
-/// Adapter for Binance public market data over REST (klines). Prices are quoted in USDT, which
-/// Marketlens treats as 1 USD (D26).
+/// Adapter for Binance public market data over REST (klines). Prices are quoted in USDT; the
+/// backfill converts them to USD with <see cref="UsdtRates"/> before they are stored (ADR 0007).
 /// </summary>
 public sealed class BinanceMarketDataClient(HttpClient http)
 {

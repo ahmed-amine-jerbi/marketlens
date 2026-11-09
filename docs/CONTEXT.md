@@ -1,7 +1,8 @@
 # Marketlens — context
 
 Short, current facts for anyone opening the project cold. History lives in the decisions log
-below and in the architecture decision records ([adr/](adr/)).
+below and in the architecture decision records ([adr/](adr/)). For a guided tour of the
+technologies and the code, read the [project guide](project-guide.md).
 
 ## 1. Purpose
 
@@ -89,11 +90,12 @@ Project-specific:
 | **Candle** | Open/high/low/close for one interval bucket (`1m`, `1h`, `1d`). |
 | **Range** | The chart's time span: `1D`, `1W`, `1M`, `3M`, `1Y`, `5Y`. |
 | **Display currency** | The asset prices are shown in (`in=` on the API); default from locale, user-changeable. |
-| **Pivot** | USD. Every asset has a USD price; any pair is the ratio of two USD prices. USDT counts as 1 USD. |
+| **Pivot** | USD. Every asset has a USD price; any pair is the ratio of two USD prices. |
+| **USDT rate** | The USD price of one USDT (Tether, `crypto:USDT`), from Frankfurter's daily rate. Binance quotes coins in USDT; ingestion multiplies by this rate, so crypto prices are in real USD (ADR 0007). |
 | **Conversion** | A rate and converted amount between two assets, computed only by the API. |
 | **Leg** | One of the two USD prices a conversion uses; the conversion is as fresh as its older leg. |
 | **Freshness** | `live` (streamed), `delayed` (polled), `daily` (published once a day). |
-| **Change basis** | What `changePct` compares with: `previous-close` (stocks, ETFs, fiat) or `rolling-24h` (crypto). |
+| **Change basis** | What `changePct` compares with: `previous-close` (stocks, ETFs, fiat, Tether) or `rolling-24h` (other crypto). |
 | **Provider** | An external data source (Frankfurter, Binance, CoinGecko, Finnhub, Twelve Data). |
 | **Adapter** | The one class that talks to one provider and emits provider-neutral types. |
 | **Forecast** | A predicted range for the next horizon steps: `median`, 80% and 95% bands. |
@@ -101,7 +103,7 @@ Project-specific:
 | **Baseline** | The "no change" forecast (the last close carried forward). The chosen model must beat it in the backtest; otherwise the range is the baseline's, and the page says so (D57). |
 | **Backtest** | Rolling re-forecast of past data to measure a model before showing it. |
 | **Track record** | How often the real price stayed inside the 80% band and the typical miss next to the baseline's, from the backtest or, once Marketlens's own forecasts have been checked across the whole 8-week window, from live results. |
-| **Forecast range** | The 80% and 95% bands drawn on the chart after the last close; "forecast range" in UI copy, never "prediction". |
+| **Forecast range** | The 80% and 95% bands drawn on the chart after the last close; "forecast range" in UI copy, never "prediction". Sized by calibration on the asset's own past moves, scaled to its current volatility. |
 | **Typical miss** | UI words for mean absolute % error of the median. |
 | **Watchlist** | A user's ordered list of asset keys; on the device when signed out, synced when signed in. |
 | **Alert rule** | "Asset above/below threshold in currency"; states `armed` and `triggered`. |
@@ -153,6 +155,12 @@ decisions:
   complete closes, checked every 10 minutes (D55); points as rows, 90-day retention (D56); the
   range is always shown with honest wording, drawn on 1W / 1M / 3M (D57, D59); after the code
   review, a failing asset waits for its next close and the live record must span the window (D60).
+- 2026-11-09 Crypto priced in real USD at Frankfurter's daily USDT rate (ADR 0007); Tether listed
+  as a daily-priced coin; migration `RepriceCryptoInUsd` refilled crypto history in USD and reset
+  forecasts. Forecast ranges calibrated on each asset's own past moves (volatility-scaled
+  conformal) instead of the models' intervals: on real prices the 80% range held 79% (coins) and
+  81% (currencies) out of sample, crypto ranges ~30% narrower. Rejected: a live Coinbase USDT
+  ticker (new provider for a 0.1% correction), new models for the centre line (no measurable gain).
 
 ## 11. Extension recipes
 

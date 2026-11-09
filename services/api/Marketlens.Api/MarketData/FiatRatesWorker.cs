@@ -6,9 +6,11 @@ using Microsoft.Extensions.Options;
 namespace Marketlens.Api.MarketData;
 
 /// <summary>
-/// Keeps fiat currencies current: syncs the currency list into the catalogue, backfills daily
-/// history once, then polls recent rates into the quote book and daily candles. A failed poll
-/// keeps the last prices (they age visibly) and retries with backoff.
+/// Keeps fiat currencies and the USDT rate (Tether's USD price, which converts every Binance price)
+/// current: syncs the currency list into the catalogue, polls recent rates into the quote book and
+/// daily candles, and backfills daily history once. Recent rates come first, so prices (and live
+/// crypto) appear after one request on a fresh database. A failed poll keeps the last prices (they
+/// age visibly) and retries with backoff.
 /// </summary>
 public sealed partial class FiatRatesWorker(
     FrankfurterClient frankfurter,
@@ -23,7 +25,8 @@ public sealed partial class FiatRatesWorker(
     /// <summary>Enough days back to find each currency's previous published rate across weekends and holidays.</summary>
     private const int RecentWindowDays = 7;
 
-    private static readonly AssetKey HistoryProbe = AssetKey.Parse("fiat:EUR");
+    /// <summary>Assets whose stored history says the backfill already ran, for fiat and for Tether.</summary>
+    private static readonly AssetKey[] HistoryProbes = [AssetKey.Parse("fiat:EUR"), AssetKey.Tether];
 
     private readonly ProviderBackoff backoff = new();
     private bool isHistoryLoaded;
@@ -72,22 +75,22 @@ public sealed partial class FiatRatesWorker(
         var currencies = await frankfurter.FetchCurrenciesAsync(cancellationToken);
         await catalog.SyncFiatAsync(currencies, cancellationToken);
         var currencyCodes = currencies.Select(currency => currency.Code).ToHashSet();
+        var quoteCodes = currencyCodes.Append(AssetKey.Tether.Symbol).ToHashSet();
         var today = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+
+        var recentPrices = await frankfurter.FetchUsdPricesAsync(quoteCodes, today.AddDays(-RecentWindowDays), today, cancellationToken);
+        await candleWriter.UpsertAsync(recentPrices.Select(ToDailyCandle), cancellationToken);
+        var updatedCount = ToLatestTicks(recentPrices).Count(quoteBook.Apply);
+        LogRefreshed(logger, currencyCodes.Count, updatedCount);
 
         if (!isHistoryLoaded)
         {
-            await BackfillHistoryAsync(currencyCodes, today, cancellationToken);
+            await BackfillHistoryAsync(quoteCodes, today, cancellationToken);
             isHistoryLoaded = true;
         }
-
-        var recentPrices = await frankfurter.FetchUsdPricesAsync(currencyCodes, today.AddDays(-RecentWindowDays), today, cancellationToken);
-        await candleWriter.UpsertAsync(recentPrices.Select(ToDailyCandle), cancellationToken);
-
-        var updatedCount = ToLatestTicks(recentPrices).Count(quoteBook.Apply);
-        LogRefreshed(logger, currencyCodes.Count, updatedCount);
     }
 
-    private async Task BackfillHistoryAsync(IReadOnlySet<string> currencyCodes, DateOnly today, CancellationToken cancellationToken)
+    private async Task BackfillHistoryAsync(IReadOnlySet<string> quoteCodes, DateOnly today, CancellationToken cancellationToken)
     {
         var historyStart = today.AddYears(-options.Value.HistoryYears);
         if (await HasHistorySinceAsync(historyStart, cancellationToken))
@@ -99,26 +102,36 @@ public sealed partial class FiatRatesWorker(
         for (var yearStart = historyStart; yearStart < today; yearStart = yearStart.AddYears(1))
         {
             var yearEnd = yearStart.AddYears(1).AddDays(-1);
-            var prices = await frankfurter.FetchUsdPricesAsync(currencyCodes, yearStart, yearEnd < today ? yearEnd : today, cancellationToken);
+            var prices = await frankfurter.FetchUsdPricesAsync(quoteCodes, yearStart, yearEnd < today ? yearEnd : today, cancellationToken);
             var writtenCount = await candleWriter.UpsertAsync(prices.Select(ToDailyCandle), cancellationToken);
             LogBackfilled(logger, yearStart, writtenCount);
         }
     }
 
+    /// <summary>True when every probe already has a daily candle from the start of the history window.</summary>
     private async Task<bool> HasHistorySinceAsync(DateOnly historyStart, CancellationToken cancellationToken)
     {
-        if (!catalog.TryGet(HistoryProbe, out var probe))
-        {
-            return false;
-        }
-
         await using var scope = scopeFactory.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<MarketlensDbContext>();
         var earliestWanted = historyStart.AddDays(RecentWindowDays).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
 
-        return await db.PriceCandles.AnyAsync(
-            candle => candle.AssetId == probe.Id && candle.Interval == CandleInterval.OneDay && candle.BucketStartUtc <= earliestWanted,
-            cancellationToken);
+        foreach (var probeKey in HistoryProbes)
+        {
+            if (!catalog.TryGet(probeKey, out var probe))
+            {
+                return false;
+            }
+
+            var hasHistory = await db.PriceCandles.AnyAsync(
+                candle => candle.AssetId == probe.Id && candle.Interval == CandleInterval.OneDay && candle.BucketStartUtc <= earliestWanted,
+                cancellationToken);
+            if (!hasHistory)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static CandleRow ToDailyCandle(DailyUsdPrice price) => new(
@@ -135,7 +148,7 @@ public sealed partial class FiatRatesWorker(
     [LoggerMessage(Level = LogLevel.Information, Message = "Fiat rates refreshed: {CurrencyCount} currencies, {UpdatedCount} new prices")]
     private static partial void LogRefreshed(ILogger logger, int currencyCount, int updatedCount);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Fiat history backfilled from {YearStart}: {CandleCount} daily candles")]
+    [LoggerMessage(Level = LogLevel.Information, Message = "Fiat and USDT history backfilled from {YearStart}: {CandleCount} daily candles")]
     private static partial void LogBackfilled(ILogger logger, DateOnly yearStart, int candleCount);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Fiat rate refresh from Frankfurter failed; retrying in {RetryDelay}")]

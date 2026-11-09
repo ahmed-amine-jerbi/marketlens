@@ -19,6 +19,18 @@ public readonly partial record struct AssetKey(AssetClass Class, string Symbol)
 {
     public static readonly AssetKey UsDollar = new(AssetClass.Fiat, "USD");
 
+    /// <summary>
+    /// Tether (USDT), the coin Binance prices every other coin in. Its USD price, the USDT rate,
+    /// turns those prices into US dollars (ADR 0007).
+    /// </summary>
+    public static readonly AssetKey Tether = new(AssetClass.Crypto, AssetUniverse.BinanceQuoteAsset);
+
+    /// <summary>
+    /// True for assets priced once a day from reference rates (fiat, and Tether from the same
+    /// source): they have daily candles only, and their change is against the previous close.
+    /// </summary>
+    public bool HasDailyPricesOnly => Class == AssetClass.Fiat || this == Tether;
+
     public static bool TryParse([NotNullWhen(true)] string? text, out AssetKey key)
     {
         key = default;

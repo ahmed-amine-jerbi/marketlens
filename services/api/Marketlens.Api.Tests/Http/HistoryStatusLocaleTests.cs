@@ -5,6 +5,8 @@ using System.Text.Json;
 using Marketlens.Api.Data;
 using Marketlens.Api.History;
 using Marketlens.Api.Locale;
+using Marketlens.Api.MarketData;
+using Marketlens.Api.Quotes;
 
 namespace Marketlens.Api.Tests.Http;
 
@@ -72,6 +74,31 @@ public sealed class HistoryStatusLocaleTests(MarketlensApiFactory factory)
         var history = await GetJsonAsync(client, "/api/v1/assets/fiat:EUR/history?range=1D");
 
         Assert.Equal("1d", history.GetProperty("interval").GetString());
+    }
+
+    [Theory]
+    [InlineData("1D", "fiat:USD")]
+    [InlineData("1M", "fiat:USD")]
+    [InlineData("1M", "crypto:BTC")]
+    public async Task Tether_has_daily_rates_only_so_short_charts_show_its_daily_points(string range, string displayIn)
+    {
+        using var client = factory.CreateClient();
+
+        var history = await EventuallyJsonAsync(client, $"/api/v1/assets/crypto:USDT/history?range={range}&in={displayIn}", HasPoints);
+
+        Assert.Equal("1d", history.GetProperty("interval").GetString());
+    }
+
+    [Fact]
+    public async Task Tether_changes_against_its_previous_daily_rate_while_other_coins_change_over_24_hours()
+    {
+        using var client = factory.CreateClient();
+
+        var quotes = await EventuallyJsonAsync(client, "/api/v1/quotes?keys=crypto:USDT", answer => answer.GetArrayLength() == 1);
+
+        Assert.Equal("previous-close", quotes[0].GetProperty("changeBasis").GetString());
+        Assert.Equal("daily", quotes[0].GetProperty("freshness").GetString());
+        Assert.Equal(ChangeBasis.Rolling24h, QuoteReader.BasisFor(AssetKey.Parse("crypto:BTC")));
     }
 
     [Fact]

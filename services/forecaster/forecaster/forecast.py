@@ -1,7 +1,9 @@
 """Price forecasts: statistical models on log daily closes, chosen per asset by backtest (D29).
 
-Working on logs keeps every range positive and makes a percentage move the same size at any price
-level. Turning a log forecast back into a price gives the median, not the mean.
+The chosen model gives the median; the 80% and 95% ranges around it are calibrated on the
+asset's own past moves (`calibrated_half_widths`). Working on logs keeps every range positive and
+makes a percentage move the same size at any price level. Turning a log forecast back into a price
+gives the median, not the mean.
 """
 
 import math
@@ -15,7 +17,14 @@ import pandas as pd
 from statsforecast import StatsForecast
 from statsforecast.models import AutoARIMA, AutoETS, AutoTheta, Naive
 
-from forecaster.backtest import BASELINE_MODEL, Backtest, as_pandas, choose_model, score_model
+from forecaster.backtest import (
+    BASELINE_MODEL,
+    Backtest,
+    as_pandas,
+    calibrated_half_widths,
+    choose_model,
+    score_model,
+)
 
 Frequency = Literal["D", "B"]
 """`D`: every calendar day (crypto trades daily). `B`: business days (stocks, ETFs, fiat)."""
@@ -141,24 +150,25 @@ def _forecast_points(
 ) -> list[ForecastPoint]:
     model = model_factory()
     future = as_pandas(
-        StatsForecast(models=[model], freq=freq).forecast(
-            h=horizon_steps, df=log_closes, level=[80, 95]
-        )
+        StatsForecast(models=[model], freq=freq).forecast(h=horizon_steps, df=log_closes)
     )
+    log_median = future[model.alias].to_numpy(dtype=float)
+    half_widths = calibrated_half_widths(log_closes["y"].to_numpy(dtype=float), horizon_steps)
+    range80 = np.asarray(half_widths.range80)
+    range95 = np.asarray(half_widths.range95)
 
-    def price(column: str) -> list[float]:
-        return [float(value) for value in np.exp(future[column].to_numpy(dtype=float))]
+    def price(log_price: np.ndarray) -> list[float]:
+        return [float(value) for value in np.exp(log_price)]
 
-    name = model.alias
     return [
         ForecastPoint(day.date(), median, low80, high80, low95, high95)
         for day, median, low80, high80, low95, high95 in zip(
             future["ds"],
-            price(name),
-            price(f"{name}-lo-80"),
-            price(f"{name}-hi-80"),
-            price(f"{name}-lo-95"),
-            price(f"{name}-hi-95"),
+            price(log_median),
+            price(log_median - range80),
+            price(log_median + range80),
+            price(log_median - range95),
+            price(log_median + range95),
             strict=True,
         )
     ]

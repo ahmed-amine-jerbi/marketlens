@@ -42,7 +42,7 @@ public sealed class ForecasterContractTests
 
         Assert.Equal("AutoTheta", forecast.Model);
         Assert.Equal(7, forecast.Points.Count);
-        Assert.Equal(new ForecasterPoint(new DateOnly(2026, 11, 8), 75848.96512m, 73667.38515m, 78171.22371m, 72544.23203m, 78925.18107m), forecast.Points[0]);
+        Assert.Equal(new ForecasterPoint(new DateOnly(2026, 11, 8), 75848.96512m, 73998.4275m, 77745.7806m, 72477.25261m, 79377.53298m), forecast.Points[0]);
         Assert.Equal(new DateOnly(2026, 11, 14), forecast.Points[^1].Date);
         Assert.Equal(new ForecasterBacktest(8, 96.43m, 1.84m, 1.86m, BeatsBaseline: true), forecast.Backtest);
     }

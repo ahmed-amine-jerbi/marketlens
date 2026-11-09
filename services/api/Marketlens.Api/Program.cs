@@ -46,6 +46,7 @@ builder.Services.AddHttpClient<FrankfurterClient>((services, http) =>
     .UseSocketsHttpHandler((handler, _) => handler.PooledConnectionLifetime = TimeSpan.FromMinutes(15))
     .SetHandlerLifetime(Timeout.InfiniteTimeSpan);
 builder.Services.AddHostedService<FiatRatesWorker>();
+builder.Services.AddSingleton<UsdtRates>();
 
 builder.Services.Configure<BinanceOptions>(binance =>
 {

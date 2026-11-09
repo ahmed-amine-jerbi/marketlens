@@ -78,8 +78,9 @@ public sealed class HistoryQuery(IServiceScopeFactory scopeFactory, AssetCatalog
     {
         var (span, plannedInterval) = Plan(range);
 
-        // Fiat has daily reference rates only (D28), so an intraday range of fiat shows daily points.
-        var isDailyOnly = asset.Class == AssetClass.Fiat && (displayIn.Class == AssetClass.Fiat);
+        // Fiat and Tether have daily reference rates only (D28), so an intraday range of them shows
+        // daily points, whatever they are shown in.
+        var isDailyOnly = asset.HasDailyPricesOnly;
         var interval = isDailyOnly ? CandleInterval.OneDay : plannedInterval;
         var nowUtc = timeProvider.GetUtcNow().UtcDateTime;
         var fromUtc = nowUtc - (isDailyOnly && span < TimeSpan.FromDays(7) ? TimeSpan.FromDays(7) : span);
@@ -118,12 +119,13 @@ public sealed class HistoryQuery(IServiceScopeFactory scopeFactory, AssetCatalog
     }
 
     /// <summary>
-    /// The display currency's closes at the finest interval it has: fiat only has days, so an hourly
-    /// chart in euros uses each day's euro rate. A few extra days before the window cover weekends.
+    /// The display currency's closes at the finest interval it has: fiat (and Tether) only have days,
+    /// so an hourly chart in euros uses each day's euro rate. A few extra days before the window
+    /// cover weekends.
     /// </summary>
     private Task<IReadOnlyList<(DateTime BucketUtc, decimal CloseUsd)>> ReadDisplayClosesAsync(AssetKey displayIn, CandleInterval interval, DateTime fromUtc, CancellationToken cancellationToken)
     {
-        var displayInterval = displayIn.Class == AssetClass.Fiat ? CandleInterval.OneDay : interval;
+        var displayInterval = displayIn.HasDailyPricesOnly ? CandleInterval.OneDay : interval;
         return ReadClosesAsync(displayIn, displayInterval, fromUtc.AddDays(-7), cancellationToken);
     }
 
