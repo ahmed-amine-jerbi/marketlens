@@ -106,6 +106,113 @@ namespace Marketlens.Api.Data.Migrations
                     b.ToTable("assets", (string)null);
                 });
 
+            modelBuilder.Entity("Marketlens.Api.Data.Forecast", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AssetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("asset_id");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<int>("HorizonDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("horizon_days");
+
+                    b.Property<decimal>("LastCloseUsd")
+                        .HasPrecision(38, 18)
+                        .HasColumnType("numeric(38,18)")
+                        .HasColumnName("last_close_usd");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("model");
+
+                    b.Property<DateOnly>("SeriesEndDate")
+                        .HasColumnType("date")
+                        .HasColumnName("series_end_date");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Backtest", "Marketlens.Api.Data.Forecast.Backtest#ForecastBacktest", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<decimal>("BaselineErrorPct")
+                                .HasPrecision(12, 4)
+                                .HasColumnType("numeric(12,4)")
+                                .HasColumnName("backtest_baseline_error_pct");
+
+                            b1.Property<bool>("BeatsBaseline")
+                                .HasColumnType("boolean")
+                                .HasColumnName("backtest_beats_baseline");
+
+                            b1.Property<decimal>("Coverage80Pct")
+                                .HasPrecision(12, 4)
+                                .HasColumnType("numeric(12,4)")
+                                .HasColumnName("backtest_coverage_80_pct");
+
+                            b1.Property<decimal>("MeanErrorPct")
+                                .HasPrecision(12, 4)
+                                .HasColumnType("numeric(12,4)")
+                                .HasColumnName("backtest_mean_error_pct");
+
+                            b1.Property<int>("WindowWeeks")
+                                .HasColumnType("integer")
+                                .HasColumnName("backtest_window_weeks");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_forecasts");
+
+                    b.HasIndex("AssetId", "CreatedAtUtc")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_forecasts_asset_id_created_at_utc");
+
+                    b.ToTable("forecasts", (string)null);
+                });
+
+            modelBuilder.Entity("Marketlens.Api.Data.ForecastEvaluation", b =>
+                {
+                    b.Property<Guid>("ForecastId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("forecast_id");
+
+                    b.Property<DateOnly>("TargetDate")
+                        .HasColumnType("date")
+                        .HasColumnName("target_date");
+
+                    b.Property<decimal>("ActualCloseUsd")
+                        .HasPrecision(38, 18)
+                        .HasColumnType("numeric(38,18)")
+                        .HasColumnName("actual_close_usd");
+
+                    b.Property<decimal>("BaselineErrorPct")
+                        .HasPrecision(12, 4)
+                        .HasColumnType("numeric(12,4)")
+                        .HasColumnName("baseline_error_pct");
+
+                    b.Property<decimal>("ErrorPct")
+                        .HasPrecision(12, 4)
+                        .HasColumnType("numeric(12,4)")
+                        .HasColumnName("error_pct");
+
+                    b.Property<bool>("IsInsideRange80")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_inside_range_80");
+
+                    b.HasKey("ForecastId", "TargetDate")
+                        .HasName("pk_forecast_evaluations");
+
+                    b.ToTable("forecast_evaluations", (string)null);
+                });
+
             modelBuilder.Entity("Marketlens.Api.Data.PriceCandle", b =>
                 {
                     b.Property<Guid>("AssetId")
@@ -217,6 +324,73 @@ namespace Marketlens.Api.Data.Migrations
                         .HasName("pk_data_protection_keys");
 
                     b.ToTable("data_protection_keys", (string)null);
+                });
+
+            modelBuilder.Entity("Marketlens.Api.Data.Forecast", b =>
+                {
+                    b.HasOne("Marketlens.Api.Data.Asset", null)
+                        .WithMany()
+                        .HasForeignKey("AssetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_forecasts_assets_asset_id");
+
+                    b.OwnsMany("Marketlens.Api.Data.ForecastPoint", "Points", b1 =>
+                        {
+                            b1.Property<Guid>("ForecastId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("forecast_id");
+
+                            b1.Property<DateOnly>("Date")
+                                .HasColumnType("date")
+                                .HasColumnName("date");
+
+                            b1.Property<decimal>("High80Usd")
+                                .HasPrecision(38, 18)
+                                .HasColumnType("numeric(38,18)")
+                                .HasColumnName("high_80_usd");
+
+                            b1.Property<decimal>("High95Usd")
+                                .HasPrecision(38, 18)
+                                .HasColumnType("numeric(38,18)")
+                                .HasColumnName("high_95_usd");
+
+                            b1.Property<decimal>("Low80Usd")
+                                .HasPrecision(38, 18)
+                                .HasColumnType("numeric(38,18)")
+                                .HasColumnName("low_80_usd");
+
+                            b1.Property<decimal>("Low95Usd")
+                                .HasPrecision(38, 18)
+                                .HasColumnType("numeric(38,18)")
+                                .HasColumnName("low_95_usd");
+
+                            b1.Property<decimal>("MedianUsd")
+                                .HasPrecision(38, 18)
+                                .HasColumnType("numeric(38,18)")
+                                .HasColumnName("median_usd");
+
+                            b1.HasKey("ForecastId", "Date")
+                                .HasName("pk_forecast_points");
+
+                            b1.ToTable("forecast_points", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("ForecastId")
+                                .HasConstraintName("fk_forecast_points_forecasts_forecast_id");
+                        });
+
+                    b.Navigation("Points");
+                });
+
+            modelBuilder.Entity("Marketlens.Api.Data.ForecastEvaluation", b =>
+                {
+                    b.HasOne("Marketlens.Api.Data.Forecast", null)
+                        .WithMany()
+                        .HasForeignKey("ForecastId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_forecast_evaluations_forecasts_forecast_id");
                 });
 
             modelBuilder.Entity("Marketlens.Api.Data.PriceCandle", b =>

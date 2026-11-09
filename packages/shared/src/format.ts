@@ -49,6 +49,21 @@ export function formatChangePct(changePct: string | null, language: Language): s
   return useTypographicMinus(formatted);
 }
 
+/**
+ * A share or an error in percent, unsigned: "96%", "1.84%", "1,84 %" (spacing per language). The
+ * API sends percent values ("96.43"), not fractions.
+ */
+export function formatPercent(
+  percent: string,
+  language: Language,
+  maximumFractionDigits = 0,
+): string {
+  return new Intl.NumberFormat(language, {
+    style: "percent",
+    maximumFractionDigits,
+  }).format(Number(percent) / 100);
+}
+
 /** Whether a change is up, down or flat, so callers pair colour with ▲/▼ and never use colour alone. */
 export function changeDirection(changePct: string | null): "up" | "down" | "flat" {
   const change = Number(changePct ?? 0);

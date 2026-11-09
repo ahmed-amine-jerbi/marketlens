@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 
 using Marketlens.Api.Conversions;
 using Marketlens.Api.Data;
+using Marketlens.Api.Forecasts;
 using Marketlens.Api.History;
 using Marketlens.Api.Http;
 using Marketlens.Api.Locale;
@@ -132,6 +133,28 @@ builder.Services.AddHttpClient<TwelveDataClient>((services, http) =>
 builder.Services.AddHostedService<TwelveDataHistoryBackfill>();
 builder.Services.AddHostedService<SampleStockFeed>();
 
+builder.Services.Configure<ForecastOptions>(forecasts =>
+{
+    builder.Configuration.GetSection(ForecastOptions.Section).Bind(forecasts);
+    if (builder.Configuration["FORECASTER_BASE_URL"] is { Length: > 0 } forecasterBaseUrl)
+    {
+        forecasts.BaseUrl = new Uri(forecasterBaseUrl);
+    }
+});
+builder.Services.AddHttpClient<ForecasterClient>((services, http) =>
+    {
+        var forecasts = services.GetRequiredService<IOptions<ForecastOptions>>().Value;
+        http.BaseAddress = forecasts.BaseUrl;
+        http.Timeout = forecasts.RequestTimeout;
+    })
+    // The scheduler holds this client for the life of the process; recycling pooled connections
+    // finds a recreated forecaster container at its new address.
+    .UseSocketsHttpHandler((handler, _) => handler.PooledConnectionLifetime = TimeSpan.FromMinutes(15))
+    .SetHandlerLifetime(Timeout.InfiniteTimeSpan);
+builder.Services.AddSingleton<ForecastEvaluator>();
+builder.Services.AddSingleton<ForecastScheduler>();
+builder.Services.AddHostedService(services => services.GetRequiredService<ForecastScheduler>());
+
 builder.Services.AddSingleton<QuoteReader>();
 builder.Services.AddSingleton<HistoryQuery>();
 builder.Services.AddSingleton<QuoteSubscriptions>();
@@ -153,6 +176,7 @@ var api = app.MapGroup("/api/v1")
 api.MapQuoteEndpoints();
 api.MapConversionEndpoints();
 api.MapHistoryEndpoints();
+api.MapForecastEndpoints();
 api.MapStatusEndpoints();
 api.MapLocaleEndpoints();
 app.MapHub<QuotesHub>(QuotesHub.Path);

@@ -21,6 +21,8 @@
 
   <ItemGroup>
     <None Include="Fixtures/**" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The forecaster's recorded contract: both services test against the same files. -->
+    <None Include="../../forecaster/tests/contract/*.json" LinkBase="Fixtures/forecaster" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

@@ -119,7 +119,8 @@
     "stocks": "Prix des actions et ETF américains de Finnhub, historique de Twelve Data. Sans clés d’API, l’application affiche des données d’exemple clairement signalées.",
     "conversions": "Une conversion divise les prix en dollars des deux actifs : elle n’est pas plus récente que le plus lent des deux.",
     "disclaimerTitle": "Pas un conseil financier",
-    "disclaimer": "Marketlens affiche des prix à titre d’information. Ils peuvent être en retard ou inexacts, et rien ici n’est une recommandation d’achat ou de vente."
+    "disclaimer": "Marketlens affiche des prix à titre d’information. Ils peuvent être en retard ou inexacts, et rien ici n’est une recommandation d’achat ou de vente.",
+    "forecasts": "Les fourchettes de prévision sont calculées par Marketlens à partir de ces cours."
   },
   "errors": {
     "loadFailed": "Le chargement a échoué. Vérifiez votre connexion et réessayez.",
@@ -128,5 +129,42 @@
     "backHome": "Retour à l’accueil",
     "unexpected": "Un problème est survenu sur cette page. Rechargez-la pour réessayer.",
     "tooManyRequests": "Trop de requêtes depuis votre réseau. Patientez une minute puis réessayez."
+  },
+  "forecast": {
+    "show": "Afficher la prévision",
+    "onlyOnRanges": "La fourchette prévue est tracée sur les graphiques 1 semaine, 1 mois et 3 mois.",
+    "sourceBacktest": "Testé sur les {{weeks}} dernières semaines de cours passés",
+    "sourceLive": "Sur les {{weeks}} dernières semaines de nos prévisions publiées",
+    "beats": "{{source}} : le cours réel est resté dans la zone ombrée {{coverage}} du temps, et l’écart typique était de {{error}}, contre {{baselineError}} en supposant que le cours ne bouge pas.",
+    "notBetter": "{{source}} : nos prévisions n’ont pas fait mieux que de supposer que le cours ne bouge pas (écart typique de {{error}} contre {{baselineError}}). Le cours réel est resté dans la zone ombrée {{coverage}} du temps.",
+    "aboutTheSame": "{{source}} : notre modèle a fait à peu près aussi bien que de supposer que le cours ne bouge pas (écart typique de {{error}} contre {{baselineError}}). Le cours réel est resté dans la zone ombrée {{coverage}} du temps.",
+    "made": "Prévision du {{date}}.",
+    "notAdvice": "Les prévisions sont des estimations, pas des conseils financiers.",
+    "howItWorks": "Comment ça marche",
+    "pending": "La prévision est en préparation et apparaîtra d’ici quelques minutes.",
+    "insufficient": "Pas encore de prévision pour {{name}} : il faut deux ans de cours quotidiens.",
+    "loadFailed": "La prévision n’a pas pu être chargée.",
+    "legend80": "Fourchette à 80 %",
+    "legend95": "Fourchette à 95 %",
+    "legendMedian": "Estimation centrale",
+    "tooltipMedian": "Estimation centrale : {{price}}",
+    "tooltipRange": "Fourchette à 80 % : {{low}} à {{high}}",
+    "chartSummary": "Prévision pour le {{date}} : {{low}} à {{high}} {{currency}} (fourchette à 80 %)."
+  },
+  "forecastMethod": {
+    "title": "Comment fonctionnent les prévisions",
+    "intro": "Les pages d’actif indiquent où un cours se situera probablement dans les sept prochains jours. C’est une fourchette, pas un cours prédit, accompagnée d’un bilan de la fréquence à laquelle les fourchettes passées étaient justes.",
+    "rangeTitle": "Ce que signifie la zone ombrée",
+    "range": "La bande la plus foncée est la fourchette à 80 % : si les prévisions sont bien calibrées, le cours réel s’y trouve environ 8 jours sur 10. La bande plus claire est la fourchette à 95 %. La ligne pointillée est l’estimation centrale, avec autant de chances d’être trop haute que trop basse.",
+    "madeTitle": "Comment elle est calculée",
+    "made": "Une fois par jour, après la clôture, Marketlens prend les cours de clôture des deux dernières années et ajuste trois modèles statistiques classiques de la bibliothèque libre statsforecast : lissage exponentiel, Theta et ARIMA. Les cryptomonnaies sont prévues jour par jour ; les actions, les fonds et les devises par jour de cotation.",
+    "chosenTitle": "Comment un modèle est choisi",
+    "chosen": "Chaque modèle est testé sur les huit dernières semaines : il prévoit chaque semaine à partir des cours qui la précèdent, et ses prévisions sont comparées à ce qui s’est passé. L’hypothèse la plus simple, un cours qui ne bouge pas, est testée de la même façon. Le modèle dont l’écart typique est le plus faible est retenu. Si aucun modèle ne fait mieux que l’hypothèse simple, la page le dit et la fourchette est centrée sur le cours du jour.",
+    "recordTitle": "Comment le bilan est mesuré",
+    "record": "Sous chaque graphique, une phrase indique à quelle fréquence le cours réel est resté dans la fourchette à 80 % et l’ampleur de l’écart typique, face à l’hypothèse simple. Tant que Marketlens n’a pas huit semaines de ses propres prévisions vérifiées pour un actif, le bilan vient du test sur huit semaines de cours passés ; ensuite, il vient de ses prévisions publiées.",
+    "limitsTitle": "Ce qu’elles ne peuvent pas faire",
+    "limits": "Les modèles ne voient que les cours passés. Ils ignorent l’actualité, les résultats, la réglementation ou un krach soudain, et une fourchette peut se tromper précisément quand cela compte le plus. Les prévisions sont calculées en dollars américains ; dans une autre devise d’affichage, elles sont converties au dernier cours de cette devise. Sans clés d’API, les prévisions des actions et des fonds reposent sur des données d’exemple.",
+    "adviceTitle": "Pas un conseil financier",
+    "advice": "Les prévisions sont des estimations fournies à titre d’information. Rien ici n’est une recommandation d’achat ou de vente."
   }
 }

@@ -130,6 +130,21 @@ export function useHistory(key: string, range: ChartRange, displayIn: string) {
   });
 }
 
+/** Forecasts change once a day; a few minutes of staleness is invisible. */
+export function useForecast(key: string, displayIn: string) {
+  return useQuery({
+    queryKey: ["forecast", key, displayIn],
+    queryFn: async ({ signal }) =>
+      unwrap(
+        await api.GET("/api/v1/assets/{key}/forecast", {
+          params: { path: { key }, query: { in: displayIn } },
+          signal,
+        }),
+      ),
+    staleTime: 5 * ONE_MINUTE,
+  });
+}
+
 export function useConversion(from: string, to: string, amount: string | null) {
   return useQuery({
     queryKey: ["conversion", from, to, amount],

@@ -42,6 +42,35 @@ test.describe("asset page", () => {
     await expect(page.getByText("Sample data").first()).toBeVisible();
   });
 
+  test("draws the forecast range with its record, hides it on request and explains the method", async ({
+    page,
+    request,
+  }) => {
+    const forecast = (await (await request.get("/api/v1/assets/crypto:BTC/forecast")).json()) as {
+      status: string;
+    };
+    test.skip(forecast.status !== "available", "The scheduler hasn't forecast Bitcoin yet.");
+    await page.goto("/assets/crypto:BTC");
+
+    await expect(page.getByRole("img", { name: /Forecast for .*\(80% range\)/ })).toBeVisible();
+    await expect(page.getByText(/the real price stayed inside/)).toBeVisible();
+
+    await page.getByRole("checkbox", { name: "Show forecast" }).uncheck();
+    await expect(
+      page.getByRole("img", { name: /Bitcoin price over 1 month/ }),
+    ).not.toHaveAccessibleName(/Forecast for/);
+    await expect(page.getByText(/the real price stayed inside/)).toBeHidden();
+
+    await page.getByRole("checkbox", { name: "Show forecast" }).check();
+    await page.getByRole("radio", { name: "1 year" }).click();
+    await expect(
+      page.getByText("The forecast range is drawn on the 1 week, 1 month and 3 month charts."),
+    ).toBeVisible();
+
+    await page.getByRole("link", { name: "How this works" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "How forecasts work" })).toBeVisible();
+  });
+
   test("explains an asset Marketlens doesn't track", async ({ page }) => {
     await page.goto("/assets/crypto:NOTACOIN");
 
@@ -100,6 +129,7 @@ const pages = [
   "/assets/crypto:BTC",
   "/convert",
   "/data-sources",
+  "/how-forecasts-work",
 ];
 
 for (const colorScheme of ["light", "dark"] as const) {

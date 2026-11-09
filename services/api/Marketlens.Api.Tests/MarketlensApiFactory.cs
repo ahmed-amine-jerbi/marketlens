@@ -1,3 +1,4 @@
+using Marketlens.Api.Forecasts;
 using Marketlens.Api.MarketData;
 using Marketlens.Api.Tests;
 
@@ -37,6 +38,9 @@ public sealed class MarketlensApiFactory : WebApplicationFactory<Program>, IAsyn
         builder.UseEnvironment("Testing");
         builder.UseSetting("DATABASE_URL", postgres.GetConnectionString());
 
+        // The sample feed writes its history after startup; the scheduler must notice within a test's wait.
+        builder.UseSetting("Forecasts:CheckInterval", "00:00:01");
+
         // Test hosts need no log output, and the Windows event log provider can be disposed before
         // hosted services finish stopping, which turns a best-effort shutdown log into a failure.
         builder.ConfigureLogging(logging => logging.ClearProviders());
@@ -44,6 +48,7 @@ public sealed class MarketlensApiFactory : WebApplicationFactory<Program>, IAsyn
         {
             services.AddHttpClient<FrankfurterClient>().ConfigurePrimaryHttpMessageHandler(() => new ProviderFixtures());
             services.AddHttpClient<BinanceMarketDataClient>().ConfigurePrimaryHttpMessageHandler(() => new ProviderFixtures());
+            services.AddHttpClient<ForecasterClient>().ConfigurePrimaryHttpMessageHandler(() => new ForecasterStub());
 
             // WebSocket streams can't be answered from fixtures; their frame parsing is unit-tested.
             services.Remove(services.Single(service => service.ServiceType == typeof(IHostedService) && service.ImplementationType == typeof(BinanceLiveFeed)));
