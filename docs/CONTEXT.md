@@ -1,7 +1,8 @@
 # Marketlens — context
 
 Short, current facts for anyone opening the project cold. History lives in the decisions log
-below and in the architecture decision records ([adr/](adr/)).
+below and in the architecture decision records ([adr/](adr/)). For a guided tour of the
+technologies and the code, read the [project guide](project-guide.md).
 
 ## 1. Purpose
 

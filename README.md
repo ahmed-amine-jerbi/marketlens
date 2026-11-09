@@ -49,7 +49,8 @@ graph LR
 - The **web app** displays and formats; it never computes prices or calls providers.
 - In Docker, **nginx** serves the web app and puts the API behind the same address.
 
-More in [docs/architecture.md](docs/architecture.md) and the decision records in
+New to the code? Start with the [project guide](docs/project-guide.md): the technologies and what
+every part does. More in [docs/architecture.md](docs/architecture.md) and the decision records in
 [docs/adr/](docs/adr/).
 
 ## Repository layout
