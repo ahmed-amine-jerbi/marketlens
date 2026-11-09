@@ -76,6 +76,40 @@ public sealed class LiveCandlesAndSnapshotsTests(MarketlensApiFactory factory)
         Assert.True(restored.AsOfUtc >= observedAtUtc);
     }
 
+    [Fact]
+    public async Task Backfilled_crypto_candles_are_stored_in_usd_at_that_days_usdt_rate()
+    {
+        var bitcoin = AssetKey.Parse("crypto:BTC");
+        var recordedDay = new DateTime(2026, 11, 7, 0, 0, 0, DateTimeKind.Utc);
+        var expectedCloseUsd = decimal.Round(75867.59m * decimal.Round(1m / 1.0016m, 18), 18);
+
+        var isStoredInUsd = await Eventually.IsTrueAsync(async () =>
+            (await CandlesAsync(bitcoin, CandleInterval.OneDay, recordedDay)).SingleOrDefault()?.CloseUsd == expectedCloseUsd);
+
+        Assert.True(isStoredInUsd);
+    }
+
+    [Fact]
+    public async Task A_backfill_restores_the_whole_window_when_only_todays_live_bucket_is_stored()
+    {
+        var chainlink = AssetKey.Parse("crypto:LINK");
+        var recordedDay = new DateTime(2026, 11, 7, 0, 0, 0, DateTimeKind.Utc);
+        var todayUtc = DateTime.UtcNow.Date;
+        var writer = factory.Services.GetRequiredService<CandleWriter>();
+        await Eventually.IsTrueAsync(async () => (await CandlesAsync(chainlink, CandleInterval.OneDay, recordedDay)).Count == 1);
+        await DeleteCandlesAsync(chainlink, CandleInterval.OneDay);
+        await writer.UpsertAsync([new CandleRow(chainlink, CandleInterval.OneDay, todayUtc, 15m, 15m, 15m, 15m, Volume: null, "binance")], TestContext.Current.CancellationToken);
+
+        using var backfill = ActivatorUtilities.CreateInstance<BinanceKlinesBackfill>(factory.Services);
+        await backfill.StartAsync(TestContext.Current.CancellationToken);
+        var isRestored = await Eventually.IsTrueAsync(async () => (await CandlesAsync(chainlink, CandleInterval.OneDay, recordedDay)).Count == 1);
+        await backfill.StopAsync(TestContext.Current.CancellationToken);
+
+        Assert.True(isRestored);
+        var restored = Assert.Single(await CandlesAsync(chainlink, CandleInterval.OneDay, recordedDay));
+        Assert.Equal(decimal.Round(75867.59m * decimal.Round(1m / 1.0016m, 18), 18), restored.CloseUsd);
+    }
+
     private static UsdQuote Quote(AssetKey asset, decimal priceUsd, DateTime asOfUtc, Freshness freshness = Freshness.Live) =>
         new(asset, priceUsd, ReferencePriceUsd: null, asOfUtc, "test", freshness);
 
@@ -90,5 +124,15 @@ public sealed class LiveCandlesAndSnapshotsTests(MarketlensApiFactory factory)
         return await db.PriceCandles
             .Where(candle => candle.AssetId == entry.Id && candle.Interval == interval && candle.BucketStartUtc == bucketStartUtc)
             .ToListAsync(TestContext.Current.CancellationToken);
+    }
+
+    private async Task DeleteCandlesAsync(AssetKey asset, CandleInterval interval)
+    {
+        Assert.True(factory.Services.GetRequiredService<AssetCatalog>().TryGet(asset, out var entry));
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<MarketlensDbContext>();
+        await db.PriceCandles
+            .Where(candle => candle.AssetId == entry.Id && candle.Interval == interval)
+            .ExecuteDeleteAsync(TestContext.Current.CancellationToken);
     }
 }

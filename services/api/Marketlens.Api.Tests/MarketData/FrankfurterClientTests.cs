@@ -1,6 +1,7 @@
 using Marketlens.Api.MarketData;
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Marketlens.Api.Tests.MarketData;
 
@@ -10,7 +11,7 @@ public sealed class FrankfurterClientTests(MarketlensApiFactory factory) : IDisp
 
     private readonly ProviderFixtures fixtures = new();
 
-    private FrankfurterClient Client => new(new HttpClient(fixtures) { BaseAddress = new Uri("https://api.frankfurter.dev/") });
+    private FrankfurterClient Client => new(new HttpClient(fixtures) { BaseAddress = new Uri("https://api.frankfurter.dev/") }, NullLogger<FrankfurterClient>.Instance);
 
     public void Dispose() => fixtures.Dispose();
 
@@ -53,6 +54,33 @@ public sealed class FrankfurterClientTests(MarketlensApiFactory factory) : IDisp
     }
 
     [Fact]
+    public async Task FetchUsdPricesAsync_prices_tether_from_the_usdt_row()
+    {
+        var prices = await Client.FetchUsdPricesAsync(new HashSet<string> { "USDT" }, new DateOnly(2026, 10, 1), new DateOnly(2026, 11, 8), TestContext.Current.CancellationToken);
+
+        Assert.Equal(39, prices.Count);
+        Assert.All(prices, price => Assert.Equal(AssetKey.Tether, price.Asset));
+        var lastDay = Assert.Single(prices, price => price.Date == new DateOnly(2026, 11, 8));
+        Assert.Equal(decimal.Round(1m / 1.0013m, 18), lastDay.PriceUsd);
+    }
+
+    [Fact]
+    public async Task FetchUsdPricesAsync_refuses_an_implausible_tether_price_and_keeps_the_rest()
+    {
+        fixtures.Respond("/v2/rates", _ => """
+            [{"date":"2026-11-07","base":"USD","quote":"USDT","rate":1.0016},
+             {"date":"2026-11-08","base":"USD","quote":"USDT","rate":0.25},
+             {"date":"2026-11-08","base":"USD","quote":"EUR","rate":0.86}]
+            """);
+
+        var prices = await Client.FetchUsdPricesAsync(new HashSet<string> { "USDT", "EUR" }, new DateOnly(2026, 11, 7), new DateOnly(2026, 11, 8), TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, prices.Count);
+        Assert.Single(prices, price => price.Asset == AssetKey.Tether && price.Date == new DateOnly(2026, 11, 7));
+        Assert.Single(prices, price => price.Asset == AssetKey.Parse("fiat:EUR"));
+    }
+
+    [Fact]
     public void ToLatestTicks_prices_each_currency_at_its_latest_day_against_the_day_before()
     {
         var euro = AssetKey.Parse("fiat:EUR");
@@ -84,5 +112,21 @@ public sealed class FrankfurterClientTests(MarketlensApiFactory factory) : IDisp
         Assert.True(quoteBook.TryGet(tunisianDinar, out var quote));
         Assert.Equal(FrankfurterClient.SourceName, quote.Source);
         Assert.Equal(new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc), quote.AsOfUtc);
+    }
+
+    [Fact]
+    public async Task At_startup_the_fiat_worker_prices_tether_daily_without_adding_a_fiat_currency()
+    {
+        var catalog = factory.Services.GetRequiredService<AssetCatalog>();
+        var quoteBook = factory.Services.GetRequiredService<QuoteBook>();
+
+        var isLoaded = await Eventually.IsTrueAsync(() => quoteBook.TryGet(AssetKey.Tether, out _));
+
+        Assert.True(isLoaded);
+        Assert.True(quoteBook.TryGet(AssetKey.Tether, out var tether));
+        Assert.Equal(decimal.Round(1m / 1.0013m, 18), tether.PriceUsd);
+        Assert.Equal(decimal.Round(1m / 1.0016m, 18), tether.ReferencePriceUsd);
+        Assert.Equal(Freshness.Daily, tether.Freshness);
+        Assert.False(catalog.TryGet(AssetKey.Parse("fiat:USDT"), out _));
     }
 }

@@ -32,8 +32,9 @@ public sealed record QuoteResponse(
 /// </summary>
 public sealed class QuoteReader(QuoteBook quoteBook)
 {
-    public static ChangeBasis BasisFor(AssetClass assetClass) =>
-        assetClass == AssetClass.Crypto ? ChangeBasis.Rolling24h : ChangeBasis.PreviousClose;
+    /// <summary>Coins traded around the clock change over a rolling 24 hours; everything priced daily or per session, against its previous close (D40).</summary>
+    public static ChangeBasis BasisFor(AssetKey asset) =>
+        asset.Class == AssetClass.Crypto && !asset.HasDailyPricesOnly ? ChangeBasis.Rolling24h : ChangeBasis.PreviousClose;
 
     /// <returns>Null when the asset or the display currency has no price yet.</returns>
     public QuoteResponse? TryRead(AssetKey asset, AssetKey displayIn)
@@ -57,7 +58,7 @@ public sealed class QuoteReader(QuoteBook quoteBook)
             conversion.Rate,
             displayQuote.Asset,
             conversion.ChangePct,
-            BasisFor(assetQuote.Asset.Class),
+            BasisFor(assetQuote.Asset),
             conversion.AsOfUtc,
             assetQuote.Source,
             conversion.Freshness);

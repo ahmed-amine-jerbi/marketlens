@@ -4,14 +4,15 @@
 > watching clients within about a second over SignalR, without a page refresh.
 
 **Status:** shipped on the web (M3); mobile in M7 · **Owner area:**
-`services/api/Marketlens.Api/Quotes/` · **Last updated:** 2026-11-08
+`services/api/Marketlens.Api/Quotes/` · **Last updated:** 2026-11-09
 
 ## What it does
 
 - Lists and searches the tracked assets, and returns quotes for up to 50 of them at once, each in
   the display currency the client asks for (`in=`, default `fiat:USD`).
-- A quote carries the price, change and its basis (`previous-close` for stocks, ETFs and fiat;
-  `rolling-24h` for crypto, D40), time, source and freshness.
+- A quote carries the price, change and its basis (`previous-close` for stocks, ETFs, fiat and
+  Tether; `rolling-24h` for other crypto, D40), time, source and freshness. Crypto prices are in
+  real USD (ADR 0007).
 - Live: a client subscribes to the assets on screen and receives at most one update per asset per
   second, already converted. A move in the display currency itself (a new euro rate) refreshes
   every quote shown in it.
@@ -84,8 +85,8 @@ sequenceDiagram
   seed the same store.
 - [QuoteParts.tsx](../../apps/web/src/components/QuoteParts.tsx): `Price` flashes its up/down colour
   for 600 ms (skipped under reduced motion), `Change` pairs ▲/▼ and spoken text with colour,
-  `Freshness` writes "Live, updated 2 sec. ago", "Rate of Nov 8, 2026", "Live, with the EUR rate of
-  Nov 8, 2026" or "Sample data".
+  `Freshness` writes "Live, updated 2 sec. ago", "Rate of Nov 8, 2026" (fiat, and Tether, whose own
+  source is Frankfurter's daily rates), "Live, with the EUR rate of Nov 8, 2026" or "Sample data".
 - [AssetTable.tsx](../../apps/web/src/components/AssetTable.tsx): rows read their own quote, so a
   price update re-renders one row. Through Docker, nginx upgrades `/hubs/` to a WebSocket.
 
@@ -153,3 +154,4 @@ contract (`MARKETLENS_UPDATE_OPENAPI=1 dotnet test`) and the types (`npm run gen
 
 - 2026-11-08 — Created (marketlens-v1, M2).
 - 2026-11-08 — Web screens and live store; public rate limit raised from 120 to 600 per minute per IP (M3).
+- 2026-11-09 — Tether: previous-close basis and "Rate of" label; crypto in real USD (price-and-forecast-accuracy).

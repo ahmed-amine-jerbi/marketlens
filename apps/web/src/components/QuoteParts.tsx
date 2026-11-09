@@ -15,6 +15,9 @@ import { useNow } from "./useNow";
 /** How long a changed price shows its up/down colour (tokens.motion.priceFlashMs). */
 const FLASH_MS = 600;
 
+/** The source of daily reference rates (fiat, and Tether's USD price), as the API names it. */
+const DAILY_RATES_SOURCE = "frankfurter";
+
 /**
  * A price that briefly takes the colour of its move when it changes, so a live update is noticed.
  * The flash is skipped for people who prefer reduced motion.
@@ -96,7 +99,8 @@ export function Freshness({ quote, assetClass }: { quote: Quote; assetClass: str
 
   if (quote.freshness === "daily") {
     const date = formatDate(quote.asOfUtc, language);
-    const isLiveAsset = assetClass !== "fiat";
+    // Tether is a coin, but its own price is Frankfurter's daily rate, like a currency's.
+    const isLiveAsset = assetClass !== "fiat" && quote.source !== DAILY_RATES_SOURCE;
     return (
       <span className="text-muted">
         {isLiveAsset

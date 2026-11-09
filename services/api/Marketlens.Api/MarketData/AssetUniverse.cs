@@ -2,7 +2,8 @@ using System.Text.Json;
 
 namespace Marketlens.Api.MarketData;
 
-public sealed record CryptoListing(string Symbol, string Name, string BinanceSymbol, string CoinGeckoId);
+/// <summary>A listed coin. Only Tether has no Binance symbol: it is the quote asset itself.</summary>
+public sealed record CryptoListing(string Symbol, string Name, string? BinanceSymbol, string CoinGeckoId);
 
 public sealed record StockListing(string Symbol, string Name, bool IsStreamed);
 
@@ -21,7 +22,10 @@ public sealed record AssetUniverse(
     /// <summary>Finnhub's free WebSocket streams at most 50 symbols per key; the rest are polled (D27).</summary>
     public const int MaxStreamedStockSymbols = 50;
 
-    /// <summary>Crypto is priced against USDT, which Marketlens treats as 1 USD (D26).</summary>
+    /// <summary>
+    /// Binance prices every coin against USDT; ingestion turns those prices into USD at the USDT
+    /// rate (ADR 0007).
+    /// </summary>
     public const string BinanceQuoteAsset = "USDT";
 
     public static string DefaultPath => Path.Combine(AppContext.BaseDirectory, "MarketData", "assets.json");
@@ -61,9 +65,19 @@ public sealed record AssetUniverse(
             yield return $"'{duplicate.Key}' is listed more than once.";
         }
 
-        foreach (var coin in Crypto.Where(coin => coin.BinanceSymbol != coin.Symbol + BinanceQuoteAsset))
+        foreach (var coin in Crypto.Where(coin => coin.Symbol != BinanceQuoteAsset && coin.BinanceSymbol != coin.Symbol + BinanceQuoteAsset))
         {
             yield return $"crypto '{coin.Symbol}' must trade as '{coin.Symbol}{BinanceQuoteAsset}' on Binance, not '{coin.BinanceSymbol}'.";
+        }
+
+        foreach (var coin in Crypto.Where(coin => coin.Symbol == BinanceQuoteAsset && coin.BinanceSymbol is not null))
+        {
+            yield return $"crypto '{BinanceQuoteAsset}' is the quote asset itself and is priced from its daily USD rate, so it takes no 'binanceSymbol' ('{coin.BinanceSymbol}').";
+        }
+
+        if (Crypto.Any(coin => coin.BinanceSymbol is not null) && Crypto.All(coin => coin.Symbol != BinanceQuoteAsset))
+        {
+            yield return $"crypto '{BinanceQuoteAsset}' (Tether) must be listed: its daily USD rate converts every Binance price, and its history is stored as its candles.";
         }
 
         foreach (var etf in Etfs.Where(etf => string.IsNullOrWhiteSpace(etf.Tracks)))

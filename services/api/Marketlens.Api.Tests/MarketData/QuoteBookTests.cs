@@ -133,6 +133,27 @@ public sealed class QuoteBookTests
     }
 
     [Fact]
+    public void RemoveBySource_drops_only_that_sources_quotes_so_an_older_real_price_can_take_their_place()
+    {
+        var microsoft = AssetKey.Parse("stock:MSFT");
+        var apple = AssetKey.Parse("stock:AAPL");
+        quoteBook.Apply(new PriceTick(microsoft, 155.38m, null, Now, "sample", Freshness.Delayed));
+        quoteBook.Apply(new PriceTick(apple, 350.51m, null, Now, "finnhub", Freshness.Live));
+        var announced = new List<UsdQuote>();
+        quoteBook.QuoteUpdated += announced.Add;
+
+        var removedCount = quoteBook.RemoveBySource("sample");
+        var isRealPriceApplied = quoteBook.Apply(new PriceTick(microsoft, 497.10m, 495.00m, Now.AddMinutes(-11), "finnhub", Freshness.Delayed));
+
+        Assert.Equal(1, removedCount);
+        Assert.True(isRealPriceApplied);
+        Assert.True(quoteBook.TryGet(microsoft, out var microsoftQuote));
+        Assert.Equal("finnhub", microsoftQuote.Source);
+        Assert.True(quoteBook.TryGet(apple, out _));
+        Assert.Equal(497.10m, Assert.Single(announced).PriceUsd);
+    }
+
+    [Fact]
     public void TryGet_returns_false_for_an_asset_without_a_price()
     {
         Assert.False(quoteBook.TryGet(AssetKey.Parse("fiat:TND"), out _));

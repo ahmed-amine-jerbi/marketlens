@@ -4,7 +4,7 @@
 > currency, small enough to draw quickly.
 
 **Status:** shipped on the web (M3); mobile in M7 · **Owner area:**
-`services/api/Marketlens.Api/History/` · **Last updated:** 2026-11-08
+`services/api/Marketlens.Api/History/` · **Last updated:** 2026-11-09
 
 ## What it does
 
@@ -13,8 +13,9 @@
 - Points are converted into the display currency with that currency's price **at the same
   moment**; fiat display currencies have daily rates, so an hourly chart in euros uses each day's
   euro rate.
-- Fiat shown in fiat has daily rates only, so 1D and 1W of `fiat:EUR` return daily points
-  (`interval: "1d"`); the client explains "daily rates only".
+- Fiat and Tether have daily rates only (`AssetKey.HasDailyPricesOnly`), so their 1D, 1W and 1M
+  return daily points (`interval: "1d"`) whatever they are shown in; the client explains "daily
+  rates only". Crypto history is in real USD (USDT converted at each day's rate, ADR 0007).
 - At most 500 points per series; the newest point always survives down-sampling.
 
 ## Walkthrough
@@ -112,3 +113,5 @@ types. A finer interval for a range needs that interval stored and retained (`Ca
 - 2026-11-08 — Web chart (M3).
 - 2026-11-09 — The web chart draws the forecast range on 1W / 1M / 3M; see
   [forecasts.md](forecasts.md) (M4).
+- 2026-11-09 — Daily-only rule covers Tether and no longer depends on the display currency, so a
+  daily asset shown in a coin is no longer empty on short ranges (price-and-forecast-accuracy).

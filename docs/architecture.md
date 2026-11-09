@@ -76,3 +76,4 @@ The decisions behind these choices are recorded in [adr/](adr/):
 | [0004](adr/0004-provider-adapters.md) | One adapter per data provider, USD as the pivot |
 | [0005](adr/0005-stateless-forecaster.md) | A stateless Python forecaster called by the API |
 | [0006](adr/0006-cookie-auth-for-web-bearer-for-mobile.md) | Cookie sign-in for web, bearer tokens for mobile |
+| [0007](adr/0007-usdt-priced-in-usd.md) | Crypto priced in US dollars at the daily USDT rate |

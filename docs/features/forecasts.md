@@ -13,6 +13,12 @@
   shaded 80% range inside a fainter 95% range, with the middle estimate (the median) dashed. Seven
   calendar days ahead: seven daily steps for crypto, the trading days in that week (five) for
   stocks, ETFs and currencies.
+- **Ranges sized from the asset's own moves.** The width is not the model's own interval but a
+  calibrated one: how far this price really moved over the last two years at each step, scaled to
+  how volatile it is now. On 52 out-of-sample weeks of real prices the 80% range held 79% of the
+  time for coins (it held 90% with the old model intervals, which were too wide) and about 81% for
+  currencies, with crypto ranges about 30% narrower. The middle line is unchanged: no model beats
+  "no change" by more than a chance-sized margin, so the ranges are where accuracy could improve.
 - **A measured track record** under the chart: the share of real closes that fell inside the 80%
   range and the typical miss (mean absolute % error), next to the typical miss of "no change". It
   comes from an eight-week backtest on past prices until Marketlens's own published forecasts for
@@ -49,11 +55,13 @@
 4. The forecaster's [create_forecast](../../services/forecaster/forecaster/app.py#L94) validates the
    series and calls [forecast_closes](../../services/forecaster/forecaster/forecast.py#L71):
    AutoETS, AutoTheta and AutoARIMA are each backtested on log closes by
-   [score_model](../../services/forecaster/forecaster/backtest.py#L60) (eight non-overlapping weekly
-   windows, refitted at every cut-off), and so is the `Naive` "no change" baseline.
-   [choose_model](../../services/forecaster/forecaster/backtest.py#L43) keeps the lowest-error model
-   if it is strictly better than the baseline, else the baseline; the chosen model is fitted on all
-   closes and forecasts the median and the 80% / 95% ranges, turned back into prices.
+   [score_model](../../services/forecaster/forecaster/backtest.py#L117) (eight non-overlapping weekly
+   windows, refitted at every cut-off, each window's range calibrated on the closes before it), and
+   so is the `Naive` "no change" baseline.
+   [choose_model](../../services/forecaster/forecaster/backtest.py#L100) keeps the lowest-error model
+   if it is strictly better than the baseline, else the baseline. The chosen model is fitted on all
+   closes and forecasts the median; [calibrated_half_widths](../../services/forecaster/forecaster/backtest.py#L62)
+   sizes the 80% / 95% ranges around it; everything is turned back into prices.
 5. The client checks the answer against the request
    ([EnsureAnswers](../../services/api/Marketlens.Api/Forecasts/ForecasterClient.cs#L105)): one point
    per step, dated after the last close, positive ranges nested around the median. The scheduler
@@ -114,6 +122,16 @@ sequenceDiagram
   a median. `backtest_window_count` turns weeks into windows of `horizonSteps` (8 weeks → 8 daily
   windows of 7 or 8 business windows of 5). A model that fails to fit or returns non-finite values is
   left out and logged, never silently replaced. Errors and coverage are measured on prices.
+- **Forecaster: calibrated ranges** ([calibrated_half_widths](../../services/forecaster/forecaster/backtest.py#L62)).
+  Volatility-scaled conformal calibration: every past close is an origin; its "no change" miss
+  after `k` steps, divided by the volatility known that day (an exponentially weighted average of
+  squared daily log returns, `EWMA_LAMBDA` = 0.94) and by √k, is one score. The 80% and 95% ranges
+  are the finite-sample quantiles of all scores (rank ⌈(n+1)·level⌉) times today's volatility and
+  √k, either side of the model's median. It needs no refits, so it costs milliseconds (32 calls,
+  one per backtest window and model, take about 25 ms). It calibrates on the "no change" misses
+  because every model's misses are about the same size (the baseline rule rarely changes the
+  centre by much), and it uses only the closes it is given, so in the backtest each window sees only
+  the closes before its cut-off. `VOLATILITY_FLOOR` keeps a flat peg's ranges finite (zero width).
 - **Forecaster: HTTP** ([app.py](../../services/forecaster/forecaster/app.py)). Pydantic validates at
   the boundary (ascending unique dates, weekdays for `B`, positive closes, 1–30 steps, 1–52 weeks,
   unknown fields refused). The handler is synchronous on purpose: CPU-bound work runs in FastAPI's
@@ -184,8 +202,8 @@ in [openapi/v1.json](../../services/api/openapi/v1.json) (`ForecastResponse`).
   "model": "AutoTheta",
   "createdAtUtc": "2026-11-08T22:55:05.216843Z",
   "horizonDays": 7,
-  "points": [{ "t": "2026-11-08T00:00:00Z", "median": "75848.96512", "low80": "73667.38515",
-               "high80": "78171.22371", "low95": "72544.23203", "high95": "78925.18107" }],
+  "points": [{ "t": "2026-11-08T00:00:00Z", "median": "75848.96512", "low80": "73998.4275",
+               "high80": "77745.7806", "low95": "72477.25261", "high95": "79377.53298" }],
   "trackRecord": { "source": "backtest", "windowWeeks": 8, "coverage80Pct": "96.43",
                    "meanErrorPct": "1.84", "baselineErrorPct": "1.86", "beatsBaseline": true }
 }
@@ -220,6 +238,11 @@ into `ForecastOptions`:
 `FORECASTER_BASE_URL` (env, [.env.example](../../.env.example)) overrides `Forecasts:BaseUrl`.
 Web: [forecastRanges](../../apps/web/src/components/PriceChart.tsx#L34).
 
+Range calibration, Python constants in [backtest.py](../../services/forecaster/forecaster/backtest.py#L23):
+`EWMA_LAMBDA` (0.94, how fast the volatility estimate forgets) and `VOLATILITY_FLOOR` (1e-6, the
+smallest daily volatility used). The calibration uses every close it is sent, so `HistoryDays`
+(730) is also "the last two years" the method page mentions.
+
 ## Errors and edge cases
 
 - **Forecaster down:** the check logs one warning and retries in 10 minutes; pages keep the last
@@ -238,7 +261,10 @@ Web: [forecastRanges](../../apps/web/src/components/PriceChart.tsx#L34).
 ## Testing
 
 - Forecaster: `cd services/forecaster && uv run pytest` — [test_backtest.py](../../services/forecaster/tests/test_backtest.py)
-  (baseline rule, windows, steady trend beats no change, flat peg doesn't, too short refused),
+  (baseline rule, windows, steady trend beats no change, flat peg doesn't and gets zero-width
+  ranges, too short refused; calibrated ranges hold 75–85% / ≥ 92% out of sample on a random walk
+  whose volatility switches regimes, follow today's volatility, and the backtest's coverage equals a
+  cut-off-by-cut-off calibration that sees only earlier closes),
   [test_forecast_api.py](../../services/forecaster/tests/test_forecast_api.py) (recorded contract
   shape, dates, nesting, 7 malformed requests, 422 with the count needed).
 - API: `cd services/api && dotnet test` — [ForecasterContractTests](../../services/api/Marketlens.Api.Tests/Forecasts/ForecasterContractTests.cs)
@@ -257,8 +283,12 @@ Web: [forecastRanges](../../apps/web/src/components/PriceChart.tsx#L34).
 
 ## Extending it
 
-- **Another model:** add it to `CANDIDATE_MODELS` in [forecast.py](../../services/forecaster/forecaster/forecast.py#L23);
-  it competes in the backtest automatically. Check the time per asset (AutoARIMA ≈ 1–2 s).
+- **Another model:** add it to `CANDIDATE_MODELS` in [forecast.py](../../services/forecaster/forecaster/forecast.py#L32);
+  it competes in the backtest automatically and gets calibrated ranges. Check the time per asset
+  (AutoARIMA ≈ 1–2 s).
+- **Another range method:** replace `calibrated_half_widths`; the backtest scores whatever it
+  returns, so the track record follows. Check it out of sample on real stored closes first: score
+  a year of weekly cut-offs, each calibrated only on the two years before it.
 - **Another horizon or window:** change `HorizonDays` / `BacktestWeeks`; the request carries both,
   the forecaster derives its windows.
 - **Machine-learning models later:** keep the contract; only the forecaster changes (ADR 0005).
@@ -276,6 +306,11 @@ Web: [forecastRanges](../../apps/web/src/components/PriceChart.tsx#L34).
   days by how many forecasts reached them, as the backtest does.
 - After adding a Finnhub key, sample-data stock forecasts stay until the next complete close.
 - Sample stocks get forecasts too (labelled sample data on the page).
+- Calibration promises coverage on average over the asset's history, not in every week: after a
+  sudden shock the volatility estimate needs a few days to catch up. Out of sample the 95% range
+  held about 93.5% for coins (fat tails), slightly under its promise; the 80% range is on target.
+- The ranges are symmetric in log price around the model's median and use the "no change" misses
+  for every model.
 
 ## Changelog
 
@@ -284,3 +319,6 @@ Web: [forecastRanges](../../apps/web/src/components/PriceChart.tsx#L34).
 - 2026-11-09 — Code review fixes (D60): one asset's failure no longer stops the run and waits for
   its next close; the live record needs the whole window; outdated forecasts read `pending`;
   `MinLiveEvaluations` removed; the "no better" sentence no longer says where the range is centred.
+- 2026-11-09 — Calibrated ranges (volatility-scaled conformal) replace the models' own intervals;
+  the backtest scores them; method page copy updated; forecasts reset by migration
+  `RepriceCryptoInUsd` along with the crypto history it repriced in USD (price-and-forecast-accuracy).

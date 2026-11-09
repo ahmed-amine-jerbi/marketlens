@@ -193,7 +193,7 @@ public sealed class ForecastSchedulerTests(MarketlensApiFactory factory)
         var nvidia = AssetKey.Parse("stock:NVDA");
         using var client = factory.CreateClient();
         await EventuallyAvailableAsync(client, $"/api/v1/assets/{nvidia}/forecast");
-        var recentCloses = (await ReadClosesAsync(nvidia, DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-30))).TakeLast(21);
+        var recentCloses = (await ReadClosesAsync(nvidia, DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-40))).TakeLast(21);
         await StorePastForecastAsync(nvidia, recentCloses.Select(close => Point(close.Date, close.CloseUsd, close.CloseUsd * 0.5m, close.CloseUsd * 2m)));
         var evaluator = factory.Services.GetRequiredService<ForecastEvaluator>();
 

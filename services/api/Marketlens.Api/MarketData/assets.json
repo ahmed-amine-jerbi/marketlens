@@ -2,6 +2,7 @@
   "crypto": [
     { "symbol": "BTC", "name": "Bitcoin", "binanceSymbol": "BTCUSDT", "coinGeckoId": "bitcoin" },
     { "symbol": "ETH", "name": "Ethereum", "binanceSymbol": "ETHUSDT", "coinGeckoId": "ethereum" },
+    { "symbol": "USDT", "name": "Tether", "coinGeckoId": "tether" },
     { "symbol": "USDC", "name": "USD Coin", "binanceSymbol": "USDCUSDT", "coinGeckoId": "usd-coin" },
     { "symbol": "BNB", "name": "BNB", "binanceSymbol": "BNBUSDT", "coinGeckoId": "binancecoin" },
     { "symbol": "SOL", "name": "Solana", "binanceSymbol": "SOLUSDT", "coinGeckoId": "solana" },
