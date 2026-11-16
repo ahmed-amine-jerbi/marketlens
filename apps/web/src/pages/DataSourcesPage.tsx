@@ -8,6 +8,7 @@ const providers = [
   { name: "Binance", href: "https://www.binance.com", text: "dataSources.crypto" },
   { name: "CoinGecko", href: "https://www.coingecko.com", text: "dataSources.cryptoNames" },
   { name: "Finnhub · Twelve Data", href: "https://finnhub.io", text: "dataSources.stocks" },
+  { name: "SEC EDGAR", href: "https://www.sec.gov/edgar", text: "dataSources.secFilings" },
 ] as const;
 
 /** Where every price comes from, how current it is, and the not-financial-advice notice (R13, R14). */

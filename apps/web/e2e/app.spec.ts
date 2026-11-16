@@ -63,6 +63,26 @@ test.describe("asset page", () => {
     await expect(page.getByText(/Drag across the chart/)).toBeVisible();
   });
 
+  test("shows a stock's key figures, or says why they are missing", async ({ page }) => {
+    await page.goto("/assets/stock:ADBE");
+
+    const keyFigures = page.getByRole("region", { name: "Key figures" });
+    await expect(keyFigures).toBeVisible();
+    await expect(
+      keyFigures
+        .getByText("Market cap")
+        .or(keyFigures.getByText(/are being collected/))
+        .or(keyFigures.getByText(/need a Finnhub API key/)),
+    ).toBeVisible();
+  });
+
+  test("shows no key figures for a fund", async ({ page }) => {
+    await page.goto("/assets/etf:SPY");
+
+    await expect(page.getByRole("heading", { level: 1, name: /SPDR/ })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Key figures" })).toHaveCount(0);
+  });
+
   test("labels stock prices as sample data when no key is set", async ({ page, request }) => {
     const status = (await (await request.get("/api/v1/status")).json()) as { stockData: string };
     test.skip(status.stockData !== "sample", "A Finnhub key is configured.");
@@ -157,6 +177,7 @@ const pages = [
   "/markets/crypto",
   "/markets/currencies",
   "/assets/crypto:BTC",
+  "/assets/stock:ADBE",
   "/convert",
   "/data-sources",
   "/how-forecasts-work",

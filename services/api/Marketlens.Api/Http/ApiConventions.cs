@@ -66,6 +66,7 @@ public static class ApiConventions
                     new() { Name = "Conversions", Description = "Amounts converted between any two assets." },
                     new() { Name = "History", Description = "Chart history, converted point by point." },
                     new() { Name = "Forecasts", Description = "Ranges for the next days with their measured track record; estimates, not financial advice." },
+                    new() { Name = "Fundamentals", Description = "A stock's key figures, annual revenue and net income from its filings, and what analysts reported; information, not financial advice." },
                     new() { Name = "Status", Description = "Freshness of each data source." },
                     new() { Name = "Locale", Description = "Language and currency suggestions for new visitors." },
                 };

@@ -4,6 +4,7 @@ import { detectLanguage } from "./detectLanguage";
 import {
   changeDirection,
   formatAge,
+  formatCompact,
   formatChangePct,
   formatDate,
   formatPercent,
@@ -129,5 +130,21 @@ describe("detectLanguage", () => {
   it("falls back to the server suggestion, then English", () => {
     expect(detectLanguage({ saved: null, deviceLanguages: ["ja-JP"], suggested: "de" })).toBe("de");
     expect(detectLanguage({ saved: "es", deviceLanguages: [], suggested: null })).toBe("en");
+  });
+});
+
+describe("formatCompact", () => {
+  it.each([
+    ["5177380424341.398", "en", "5.177T"],
+    ["478834000000", "en", "478.8B"],
+    ["-267000000", "en", "−267M"],
+    ["478834000000", "de", "478,8 Mrd."],
+    ["39.1706", "en", "39.17"],
+  ])("formats %s in %s as %s", (value, language, expected) => {
+    expect(plainSpaces(formatCompact(value, language as "en" | "de"))).toBe(expected);
+  });
+
+  it("leaves a value that isn't a number as it is", () => {
+    expect(formatCompact("n/a", "en")).toBe("n/a");
   });
 });

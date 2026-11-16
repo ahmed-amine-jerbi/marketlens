@@ -85,8 +85,10 @@ sequenceDiagram
 - [liveQuotes.ts](../../apps/web/src/api/liveQuotes.ts): one SignalR connection for the app,
   watcher counting so components share subscriptions, resubscribe after reconnecting, and a quote
   store read with `useSyncExternalStore`. The SignalR client is imported with the first
-  subscription, so it isn't part of the first download. When automatic reconnection gives up, the
-  connection restarts after 5, 15, 30 and then every 60 seconds while anything on screen is live; REST answers ([queries.ts](../../apps/web/src/api/queries.ts))
+  subscription, so it isn't part of the first download. Components that subscribe while the hub is
+  still connecting wait for that same start. When automatic reconnection gives up, or the first
+  start fails, the connection restarts after 5, 15, 30 and then every 60 seconds while anything on
+  screen is live (one restart chain at a time); REST answers ([queries.ts](../../apps/web/src/api/queries.ts))
   seed the same store.
 - [QuoteParts.tsx](../../apps/web/src/components/QuoteParts.tsx): `Price` flashes its up/down colour
   for 600 ms (skipped under reduced motion), `Change` pairs ▲/▼ and spoken text with colour,

@@ -13,6 +13,7 @@ import { Change, Freshness, Price } from "../components/QuoteParts";
 import { LoadError } from "../components/States";
 import { ConverterPanel } from "../conversions/ConverterPanel";
 import { ForecastNote } from "../forecasts/ForecastNote";
+import { KeyFigures } from "../fundamentals/KeyFigures";
 import { useSettings } from "../settings/Settings";
 
 /**
@@ -164,6 +165,9 @@ export function AssetPage() {
         />
         {isForecastShown && (
           <ForecastNote forecast={forecast} assetName={asset.name} isRangeDrawn={isRangeDrawn} />
+        )}
+        {asset.class === "stock" && (
+          <KeyFigures assetKey={asset.key} assetName={asset.name} displayIn={displayCurrency} />
         )}
       </article>
 

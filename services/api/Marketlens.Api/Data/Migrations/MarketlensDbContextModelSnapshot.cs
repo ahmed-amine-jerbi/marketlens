@@ -18,10 +18,46 @@ namespace Marketlens.Api.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.14")
+                .HasAnnotation("ProductVersion", "10.0.15")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("Marketlens.Api.Data.AnalystRecommendation", b =>
+                {
+                    b.Property<Guid>("AssetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("asset_id");
+
+                    b.Property<DateOnly>("PeriodDate")
+                        .HasColumnType("date")
+                        .HasColumnName("period_date");
+
+                    b.Property<int>("Buy")
+                        .HasColumnType("integer")
+                        .HasColumnName("buy");
+
+                    b.Property<int>("Hold")
+                        .HasColumnType("integer")
+                        .HasColumnName("hold");
+
+                    b.Property<int>("Sell")
+                        .HasColumnType("integer")
+                        .HasColumnName("sell");
+
+                    b.Property<int>("StrongBuy")
+                        .HasColumnType("integer")
+                        .HasColumnName("strong_buy");
+
+                    b.Property<int>("StrongSell")
+                        .HasColumnType("integer")
+                        .HasColumnName("strong_sell");
+
+                    b.HasKey("AssetId", "PeriodDate")
+                        .HasName("pk_analyst_recommendations");
+
+                    b.ToTable("analyst_recommendations", (string)null);
+                });
 
             modelBuilder.Entity("Marketlens.Api.Data.Asset", b =>
                 {
@@ -104,6 +140,133 @@ namespace Marketlens.Api.Data.Migrations
                         .HasDatabaseName("ix_assets_class_is_active");
 
                     b.ToTable("assets", (string)null);
+                });
+
+            modelBuilder.Entity("Marketlens.Api.Data.AssetFinancialYear", b =>
+                {
+                    b.Property<Guid>("AssetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("asset_id");
+
+                    b.Property<DateOnly>("PeriodEndDate")
+                        .HasColumnType("date")
+                        .HasColumnName("period_end_date");
+
+                    b.Property<DateOnly>("FiledDate")
+                        .HasColumnType("date")
+                        .HasColumnName("filed_date");
+
+                    b.Property<decimal?>("NetIncomeUsd")
+                        .HasPrecision(24, 4)
+                        .HasColumnType("numeric(24,4)")
+                        .HasColumnName("net_income_usd");
+
+                    b.Property<DateOnly>("PeriodStartDate")
+                        .HasColumnType("date")
+                        .HasColumnName("period_start_date");
+
+                    b.Property<decimal>("RevenueUsd")
+                        .HasPrecision(24, 4)
+                        .HasColumnType("numeric(24,4)")
+                        .HasColumnName("revenue_usd");
+
+                    b.HasKey("AssetId", "PeriodEndDate")
+                        .HasName("pk_asset_financial_years");
+
+                    b.ToTable("asset_financial_years", (string)null);
+                });
+
+            modelBuilder.Entity("Marketlens.Api.Data.AssetFundamentals", b =>
+                {
+                    b.Property<Guid>("AssetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("asset_id");
+
+                    b.Property<decimal?>("Beta")
+                        .HasPrecision(38, 18)
+                        .HasColumnType("numeric(38,18)")
+                        .HasColumnName("beta");
+
+                    b.Property<string>("Country")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("country");
+
+                    b.Property<decimal?>("DividendYieldPct")
+                        .HasPrecision(38, 18)
+                        .HasColumnType("numeric(38,18)")
+                        .HasColumnName("dividend_yield_pct");
+
+                    b.Property<decimal?>("EpsTtmUsd")
+                        .HasPrecision(38, 18)
+                        .HasColumnType("numeric(38,18)")
+                        .HasColumnName("eps_ttm_usd");
+
+                    b.Property<string>("Exchange")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("exchange");
+
+                    b.Property<DateTime?>("FinnhubFetchedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("finnhub_fetched_at_utc");
+
+                    b.Property<decimal?>("High52WeekUsd")
+                        .HasPrecision(38, 18)
+                        .HasColumnType("numeric(38,18)")
+                        .HasColumnName("high_52_week_usd");
+
+                    b.Property<string>("Industry")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("industry");
+
+                    b.Property<DateOnly?>("IpoDate")
+                        .HasColumnType("date")
+                        .HasColumnName("ipo_date");
+
+                    b.Property<decimal?>("Low52WeekUsd")
+                        .HasPrecision(38, 18)
+                        .HasColumnType("numeric(38,18)")
+                        .HasColumnName("low_52_week_usd");
+
+                    b.Property<decimal?>("MarketCapPriceUsd")
+                        .HasPrecision(38, 18)
+                        .HasColumnType("numeric(38,18)")
+                        .HasColumnName("market_cap_price_usd");
+
+                    b.Property<decimal?>("MarketCapUsd")
+                        .HasPrecision(24, 4)
+                        .HasColumnType("numeric(24,4)")
+                        .HasColumnName("market_cap_usd");
+
+                    b.Property<DateOnly?>("NextEarningsDate")
+                        .HasColumnType("date")
+                        .HasColumnName("next_earnings_date");
+
+                    b.Property<decimal?>("PeRatio")
+                        .HasPrecision(38, 18)
+                        .HasColumnType("numeric(38,18)")
+                        .HasColumnName("pe_ratio");
+
+                    b.Property<DateTime?>("SecFetchedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("sec_fetched_at_utc");
+
+                    b.Property<decimal?>("SharesOutstanding")
+                        .HasPrecision(24, 4)
+                        .HasColumnType("numeric(24,4)")
+                        .HasColumnName("shares_outstanding");
+
+                    b.Property<string>("WebsiteUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("website_url");
+
+                    b.HasKey("AssetId")
+                        .HasName("pk_asset_fundamentals");
+
+                    b.ToTable("asset_fundamentals", (string)null);
                 });
 
             modelBuilder.Entity("Marketlens.Api.Data.Forecast", b =>
@@ -324,6 +487,36 @@ namespace Marketlens.Api.Data.Migrations
                         .HasName("pk_data_protection_keys");
 
                     b.ToTable("data_protection_keys", (string)null);
+                });
+
+            modelBuilder.Entity("Marketlens.Api.Data.AnalystRecommendation", b =>
+                {
+                    b.HasOne("Marketlens.Api.Data.Asset", null)
+                        .WithMany()
+                        .HasForeignKey("AssetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_analyst_recommendations_assets_asset_id");
+                });
+
+            modelBuilder.Entity("Marketlens.Api.Data.AssetFinancialYear", b =>
+                {
+                    b.HasOne("Marketlens.Api.Data.Asset", null)
+                        .WithMany()
+                        .HasForeignKey("AssetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_asset_financial_years_assets_asset_id");
+                });
+
+            modelBuilder.Entity("Marketlens.Api.Data.AssetFundamentals", b =>
+                {
+                    b.HasOne("Marketlens.Api.Data.Asset", null)
+                        .WithOne()
+                        .HasForeignKey("Marketlens.Api.Data.AssetFundamentals", "AssetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_asset_fundamentals_assets_asset_id");
                 });
 
             modelBuilder.Entity("Marketlens.Api.Data.Forecast", b =>

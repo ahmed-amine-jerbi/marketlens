@@ -30,6 +30,27 @@ public sealed class AssetUniverseTests(MarketlensApiFactory factory)
         Assert.Empty(Valid.FindProblems());
     }
 
+    [Theory]
+    [InlineData("320193")]
+    [InlineData("00003201930")]
+    [InlineData("000032019A")]
+    public void FindProblems_refuses_an_sec_id_that_is_not_ten_digits(string secCik)
+    {
+        var badCik = Valid with { Stocks = [new StockListing("AAPL", "Apple", IsStreamed: true, secCik)] };
+
+        var problem = Assert.Single(badCik.FindProblems());
+
+        Assert.Contains("10 digits", problem, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Every_stock_in_the_shipped_universe_has_an_sec_id()
+    {
+        var universe = AssetUniverse.Load(AssetUniverse.DefaultPath);
+
+        Assert.All(universe.Stocks, stock => Assert.NotNull(stock.SecCik));
+    }
+
     [Fact]
     public void FindProblems_refuses_more_streamed_symbols_than_the_free_websocket_allows()
     {
