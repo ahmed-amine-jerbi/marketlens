@@ -9,6 +9,7 @@ const navigation = [
   { to: "/markets/currencies", label: "nav.currencies", end: false },
   { to: "/markets/crypto", label: "nav.crypto", end: false },
   { to: "/markets/stocks", label: "nav.stocks", end: false },
+  { to: "/news", label: "nav.news", end: false },
   { to: "/convert", label: "nav.convert", end: false },
 ] as const;
 

@@ -52,9 +52,13 @@ public sealed record BasicFinancials(
 /// <summary>How many analysts rated a stock strong buy … strong sell in one month, as Finnhub reports it.</summary>
 public sealed record RecommendationTrend(DateOnly Period, int StrongBuy, int Buy, int Hold, int Sell, int StrongSell);
 
+/// <summary>A news article as Finnhub lists it; the link and picture are the publisher's.</summary>
+public sealed record NewsArticle(long Id, string Headline, string? Summary, string Source, Uri Url, Uri? ImageUrl, DateTime PublishedAtUtc);
+
 /// <summary>
-/// Adapter for Finnhub REST: quotes, and the free fundamentals (profile, basic financials, analyst
-/// recommendations, earnings calendar). The key travels in a header, never in a URL that could be logged.
+/// Adapter for Finnhub REST: quotes, the free fundamentals (profile, basic financials, analyst
+/// recommendations, earnings calendar) and news. The key travels in a header, never in a URL that
+/// could be logged.
 /// </summary>
 public sealed class FinnhubClient(HttpClient http)
 {
@@ -63,6 +67,10 @@ public sealed class FinnhubClient(HttpClient http)
 
     /// <summary>Provider text is stored and shown; anything longer is cut, never trusted to be short.</summary>
     public const int MaxTextLength = 120;
+
+    public const int MaxHeadlineLength = 300;
+
+    public const int MaxSummaryLength = 600;
 
     private const decimal Million = 1_000_000m;
 
@@ -106,6 +114,63 @@ public sealed class FinnhubClient(HttpClient http)
         var to = fromDate.AddDays(days).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
         using var calendar = await GetJsonAsync($"calendar/earnings?symbol={Uri.EscapeDataString(finnhubSymbol)}&from={from}&to={to}", cancellationToken);
         return ParseNextEarningsDate(calendar.RootElement, fromDate);
+    }
+
+    /// <summary>Market news in one of Finnhub's categories (<c>general</c>, <c>crypto</c>), newest first.</summary>
+    public async Task<IReadOnlyList<NewsArticle>> FetchMarketNewsAsync(string finnhubCategory, CancellationToken cancellationToken)
+    {
+        using var news = await GetJsonAsync($"news?category={Uri.EscapeDataString(finnhubCategory)}", cancellationToken);
+        return ParseNews(news.RootElement);
+    }
+
+    /// <summary>News about one company between two dates (North American companies on the free plan), newest first.</summary>
+    public async Task<IReadOnlyList<NewsArticle>> FetchCompanyNewsAsync(string finnhubSymbol, DateOnly fromDate, DateOnly toDate, CancellationToken cancellationToken)
+    {
+        var from = fromDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        var to = toDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        using var news = await GetJsonAsync($"company-news?symbol={Uri.EscapeDataString(finnhubSymbol)}&from={from}&to={to}", cancellationToken);
+        return ParseNews(news.RootElement);
+    }
+
+    // [{"id", "headline", "summary", "source", "url", "image", "datetime": unix seconds, ...}]
+    /// <returns>
+    /// Newest first. An article without a headline, an https link or a time is left out; a picture that
+    /// isn't an https URL is dropped (the article stays). Repeated ids keep their first copy.
+    /// </returns>
+    public static IReadOnlyList<NewsArticle> ParseNews(JsonElement news)
+    {
+        if (news.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        var articles = new List<NewsArticle>();
+        foreach (var item in news.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object
+                || !item.TryGetProperty("id", out var idField) || !idField.TryGetInt64(out var id)
+                || Text(item, "headline", MaxHeadlineLength) is not { } headline
+                || HttpsUrl(item, "url") is not { } url
+                || !item.TryGetProperty("datetime", out var timeField) || !timeField.TryGetInt64(out var publishedAtSeconds) || publishedAtSeconds <= 0)
+            {
+                continue;
+            }
+
+            articles.Add(new NewsArticle(
+                id,
+                headline,
+                Text(item, "summary", MaxSummaryLength),
+                Text(item, "source") ?? url.Host,
+                url,
+                HttpsUrl(item, "image"),
+                DateTime.UnixEpoch.AddSeconds(publishedAtSeconds)));
+        }
+
+        return articles
+            .GroupBy(article => article.Id)
+            .Select(copies => copies.First())
+            .OrderByDescending(article => article.PublishedAtUtc)
+            .ToList();
     }
 
     /// <returns>Null when Finnhub doesn't know the symbol (it answers with an empty object).</returns>
@@ -205,7 +270,7 @@ public sealed class FinnhubClient(HttpClient http)
         return await JsonDocument.ParseAsync(body, cancellationToken: cancellationToken);
     }
 
-    private static string? Text(JsonElement parent, string property)
+    private static string? Text(JsonElement parent, string property, int maxLength = MaxTextLength)
     {
         if (parent.ValueKind != JsonValueKind.Object
             || !parent.TryGetProperty(property, out var value)
@@ -215,7 +280,7 @@ public sealed class FinnhubClient(HttpClient http)
             return null;
         }
 
-        return text.Length <= MaxTextLength ? text : text[..MaxTextLength];
+        return text.Length <= maxLength ? text : text[..maxLength];
     }
 
     // Read from the JSON number text, so values never pass through a binary float.

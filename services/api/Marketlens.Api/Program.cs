@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Headers;
-
 using Marketlens.Api.Conversions;
 using Marketlens.Api.Data;
 using Marketlens.Api.Forecasts;
@@ -9,9 +8,9 @@ using Marketlens.Api.History;
 using Marketlens.Api.Http;
 using Marketlens.Api.Locale;
 using Marketlens.Api.MarketData;
+using Marketlens.Api.News;
 using Marketlens.Api.Quotes;
 using Marketlens.Api.Status;
-
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -119,6 +118,8 @@ builder.Services.AddHttpClient<SecEdgarClient>((services, http) =>
         handler.AutomaticDecompression = DecompressionMethods.All;
     })
     .SetHandlerLifetime(Timeout.InfiniteTimeSpan);
+builder.Services.Configure<NewsOptions>(builder.Configuration.GetSection(NewsOptions.Section));
+builder.Services.AddSingleton<NewsService>();
 builder.Services.Configure<FundamentalsOptions>(builder.Configuration.GetSection(FundamentalsOptions.Section));
 builder.Services.AddSingleton<FundamentalsRefresher>();
 builder.Services.AddHostedService(services => services.GetRequiredService<FundamentalsRefresher>());
@@ -209,6 +210,7 @@ api.MapConversionEndpoints();
 api.MapHistoryEndpoints();
 api.MapForecastEndpoints();
 api.MapFundamentalsEndpoints();
+api.MapNewsEndpoints();
 api.MapStatusEndpoints();
 api.MapLocaleEndpoints();
 app.MapHub<QuotesHub>(QuotesHub.Path);

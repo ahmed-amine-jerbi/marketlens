@@ -10,6 +10,7 @@
     "currencies": "Währungen",
     "crypto": "Krypto",
     "stocks": "Aktien und ETFs",
+    "news": "Nachrichten",
     "convert": "Umrechnen",
     "dataSources": "Datenquellen"
   },
@@ -127,7 +128,7 @@
     "fiat": "Tägliche Referenzkurse der Zentralbanken und der tägliche USDT-Kurs, über Frankfurter.",
     "crypto": "Live-Preise aus den öffentlichen Marktdaten von Binance, notiert in USDT und zum USDT-Tageskurs von Frankfurter in US-Dollar umgerechnet.",
     "cryptoNames": "Coin-Logos: Daten bereitgestellt von CoinGecko.",
-    "stocks": "Kurse von US-Aktien und ETFs, Kennzahlen und Analystenzahlen von Finnhub, Verlauf von Twelve Data. Ohne API-Schlüssel zeigt die App deutlich gekennzeichnete Beispielkurse und keine Kennzahlen.",
+    "stocks": "Kurse von US-Aktien und ETFs, Kennzahlen, Analystenzahlen und Marktnachrichten von Finnhub, Verlauf von Twelve Data. Ohne API-Schlüssel zeigt die App deutlich gekennzeichnete Beispielkurse, keine Kennzahlen und keine Nachrichten.",
     "conversions": "Eine Umrechnung teilt die Dollarpreise der beiden Werte und ist daher nur so aktuell wie der langsamere der beiden.",
     "disclaimerTitle": "Keine Anlageberatung",
     "disclaimer": "Marketlens zeigt Preise nur zur Information. Sie können verzögert oder falsch sein, und nichts hier ist eine Empfehlung zum Kauf oder Verkauf.",
@@ -222,5 +223,24 @@
     "sources": "Kennzahlen und Analystenzahlen von Finnhub. Stand {{date}}. Nur zur Information, keine Anlageberatung.",
     "sourcesWithFilings": "Kennzahlen und Analystenzahlen von Finnhub; Umsatz und Nettoergebnis aus SEC-EDGAR-Meldungen. Stand {{date}}. Nur zur Information, keine Anlageberatung.",
     "currencyNote": "Beträge in {{currency}} zum heutigen Wechselkurs."
+  },
+  "news": {
+    "title": "Nachrichten",
+    "intro": "Die neuesten Schlagzeilen zu Aktienmärkten und Kryptowährungen, über Finnhub. Jede verlinkt auf ihren Herausgeber.",
+    "markets": "Märkte",
+    "crypto": "Krypto",
+    "tabsLabel": "Nachrichtenthemen",
+    "latestTitle": "Neueste Nachrichten",
+    "more": "Weitere Nachrichten",
+    "companyTitle": "Nachrichten zu {{name}}",
+    "companyIntro": "Die Schlagzeilen der letzten Woche, die {{name}} erwähnen.",
+    "empty": "Gerade keine Nachrichten. Schauen Sie später wieder vorbei.",
+    "companyEmpty": "Keine Nachrichten zu {{name}} in der letzten Woche.",
+    "unavailable": "Die Nachrichten konnten gerade nicht von Finnhub abgerufen werden. Versuchen Sie es in ein paar Minuten erneut.",
+    "noProviderKey": "Nachrichten brauchen einen Finnhub-API-Schlüssel auf diesem Marketlens-Server.",
+    "loadFailed": "Die Nachrichten konnten nicht geladen werden.",
+    "meta": "{{source}} · {{age}}",
+    "opensPublisher": "(öffnet {{source}} in einem neuen Tab)",
+    "notice": "Schlagzeilen und Zusammenfassungen gehören ihren Herausgebern. Nur auf Englisch. Nachrichten dienen der Information, sie sind keine Anlageberatung."
   }
 }
