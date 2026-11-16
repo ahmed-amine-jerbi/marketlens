@@ -64,6 +64,11 @@ const watchers = new Map<string, number>();
 // delay repeats) for as long as something on screen is live.
 const RESTART_DELAYS_MS = [5_000, 15_000, 30_000, 60_000] as const;
 let restartAttempt = 0;
+let restartTimer: ReturnType<typeof setTimeout> | undefined;
+
+// Components mounting together subscribe while the first start is still connecting; they wait for
+// that same start instead of finding the hub "connecting" and giving up.
+let starting: Promise<void> | undefined;
 
 async function getConnection(): Promise<{ hub: HubConnection; signalR: SignalR }> {
   signalR ??= await import("@microsoft/signalr");
@@ -89,14 +94,16 @@ async function getConnection(): Promise<{ hub: HubConnection; signalR: SignalR }
   return { hub, signalR };
 }
 
+/** One restart chain at a time, whether the hub closed or a start failed. */
 function scheduleRestart(): void {
-  if (watchers.size === 0) {
+  if (watchers.size === 0 || restartTimer !== undefined) {
     return;
   }
 
   const delayMs = RESTART_DELAYS_MS[Math.min(restartAttempt, RESTART_DELAYS_MS.length - 1)];
   restartAttempt += 1;
-  setTimeout(() => {
+  restartTimer = setTimeout(() => {
+    restartTimer = undefined;
     resubscribeAll()
       .then(() => {
         restartAttempt = 0;
@@ -111,9 +118,16 @@ function scheduleRestart(): void {
 async function subscribe(keys: readonly string[], displayIn: string): Promise<void> {
   const { hub, signalR: client } = await getConnection();
   if (hub.state === client.HubConnectionState.Disconnected) {
-    await hub.start();
+    starting ??= hub.start().finally(() => {
+      starting = undefined;
+    });
   }
 
+  if (starting) {
+    await starting;
+  }
+
+  // Still not connected: an automatic reconnect is under way, and it resubscribes every watcher.
   if (hub.state !== client.HubConnectionState.Connected) {
     return;
   }
@@ -152,8 +166,10 @@ export function useLiveQuotes(keys: readonly string[], displayIn: string): void 
     if (added.length > 0) {
       subscribe(added, displayIn).catch((error: unknown) => {
         // Live updates are an enhancement: REST already shows the prices, so a failed subscribe
-        // only means they stop moving until the connection comes back.
+        // only means they stop moving until the connection comes back. A failed start doesn't
+        // raise onclose, so the restart is scheduled here too.
         console.warn("Live quotes unavailable", error);
+        scheduleRestart();
       });
     }
 
