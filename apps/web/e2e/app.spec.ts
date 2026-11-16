@@ -33,6 +33,36 @@ test.describe("asset page", () => {
     await expect(page.getByRole("img", { name: /Bitcoin price over 1 day/ })).toBeVisible();
   });
 
+  test("compares two past points by dragging, with the sliders, and clears", async ({ page }) => {
+    await page.goto("/assets/crypto:BTC");
+    const chart = page.getByRole("img", { name: /Bitcoin price over 1 month/ });
+    await expect(chart).toBeVisible();
+    await expect(page.getByText(/Drag across the chart/)).toBeVisible();
+
+    const box = await chart.boundingBox();
+    if (!box) {
+      throw new Error("The chart has no box.");
+    }
+    await page.mouse.move(box.x + box.width * 0.2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.5, box.y + box.height / 2, { steps: 8 });
+    await page.mouse.up();
+
+    const clear = page.getByRole("button", { name: "Clear comparison" });
+    await expect(clear).toBeVisible();
+    await expect(page.locator("figure")).toContainText(/USD.*→.*USD.*%/);
+    await clear.click();
+    await expect(page.getByText(/Drag across the chart/)).toBeVisible();
+
+    const start = page.getByRole("slider", { name: "Start point" });
+    await start.focus();
+    await page.keyboard.press("PageUp");
+    await expect(start).toHaveAttribute("aria-valuetext", /, [\d,.]+ USD$/);
+    await expect(clear).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByText(/Drag across the chart/)).toBeVisible();
+  });
+
   test("labels stock prices as sample data when no key is set", async ({ page, request }) => {
     const status = (await (await request.get("/api/v1/status")).json()) as { stockData: string };
     test.skip(status.stockData !== "sample", "A Finnhub key is configured.");
