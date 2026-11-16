@@ -38,12 +38,8 @@ const PRICE_AXIS_WIDTH = 72;
 /** Percent changes keep four decimals before display rounds them to two. */
 const PERCENT_DECIMALS = 4;
 
-/**
- * Two past points picked on one chart (D58), stored by time so a refetch that shifts the points
- * keeps them; `scope` ties them to the asset, range and display currency they were picked on.
- */
+/** Two past points picked on one chart (D58), stored by time so a refetch that shifts the points keeps them. */
 interface Comparison {
-  scope: string;
   startTime: number;
   endTime: number;
 }
@@ -196,6 +192,16 @@ export function PriceChart({
   const [dragAnchorTime, setDragAnchorTime] = useState<number | null>(null);
   const [announcement, setAnnouncement] = useState("");
 
+  // A comparison belongs to the asset, range and currency it was picked on; changing any of them
+  // clears it (reset during render, so the old span is never drawn on the new series).
+  const scope = `${asset.key}|${range}|${displayIn}`;
+  const [comparedScope, setComparedScope] = useState(scope);
+  if (comparedScope !== scope) {
+    setComparedScope(scope);
+    setComparison(null);
+    setDragAnchorTime(null);
+  }
+
   if (history.isError) {
     return (
       <div className="mt-4">
@@ -237,11 +243,10 @@ export function PriceChart({
       : historySummary;
   const handOverTime = Date.parse(last.t);
   const pastPoints = history.data.points;
-  const scope = `${asset.key}|${range}|${displayIn}`;
-  // A comparison picked on another asset, range or currency doesn't carry over.
-  const picked = comparison?.scope === scope ? comparison : null;
-  const startIndex = picked ? nearestHistoryIndex(pastPoints, picked.startTime) : 0;
-  const endIndex = picked ? nearestHistoryIndex(pastPoints, picked.endTime) : pastPoints.length - 1;
+  const startIndex = comparison ? nearestHistoryIndex(pastPoints, comparison.startTime) : 0;
+  const endIndex = comparison
+    ? nearestHistoryIndex(pastPoints, comparison.endTime)
+    : pastPoints.length - 1;
   const canCompare = pastPoints.length > 1;
   const firstTime = points[0]?.time ?? handOverTime;
   const lastTime = points.at(-1)?.time ?? handOverTime;
@@ -255,11 +260,11 @@ export function PriceChart({
   };
 
   const pick = (startTime: number, endTime: number) => {
-    setComparison({ scope, startTime, endTime });
+    setComparison({ startTime, endTime });
   };
 
   const clear = () => {
-    if (picked) {
+    if (comparison) {
       setAnnouncement(t("asset.compare.cleared"));
     }
 
@@ -332,7 +337,7 @@ export function PriceChart({
   };
 
   const clearOnEscape = (event: KeyboardEvent<HTMLElement>) => {
-    if (event.key === "Escape" && picked) {
+    if (event.key === "Escape" && comparison) {
       event.preventDefault();
       clear();
     }
@@ -432,10 +437,10 @@ export function PriceChart({
                   />
                 </>
               )}
-              {picked && picked.startTime !== picked.endTime && (
+              {comparison && comparison.startTime !== comparison.endTime && (
                 <ReferenceArea
-                  x1={Math.min(picked.startTime, picked.endTime)}
-                  x2={Math.max(picked.startTime, picked.endTime)}
+                  x1={Math.min(comparison.startTime, comparison.endTime)}
+                  x2={Math.max(comparison.startTime, comparison.endTime)}
                   fill="var(--ml-color-accent)"
                   fillOpacity={0.1}
                   stroke="var(--ml-color-accent)"
@@ -463,8 +468,8 @@ export function PriceChart({
       )}
       {canCompare && (
         <ComparisonSummary
-          start={picked ? pastPoints[Math.min(startIndex, endIndex)] : undefined}
-          end={picked ? pastPoints[Math.max(startIndex, endIndex)] : undefined}
+          start={comparison ? pastPoints[Math.min(startIndex, endIndex)] : undefined}
+          end={comparison ? pastPoints[Math.max(startIndex, endIndex)] : undefined}
           interval={interval}
           currency={currency}
           onClear={clear}
