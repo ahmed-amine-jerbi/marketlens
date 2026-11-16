@@ -83,6 +83,14 @@ function navLinkClass({ isActive }: { isActive: boolean }): string {
     : `${base} text-muted hover:text-ink`;
 }
 
+/**
+ * The browser tab's title for a page (WCAG 2.4.2). React 19 moves a rendered <title> into the
+ * document head and swaps it when the page changes.
+ */
+export function PageTitle({ title }: { title: string }) {
+  return <title>{`${title} · Marketlens`}</title>;
+}
+
 /** Shown when a page throws: the shell stays usable and the visitor can reload or go home. */
 export function RouteError() {
   const { t } = useTranslation();
@@ -90,9 +98,20 @@ export function RouteError() {
   return (
     <main className="mx-auto max-w-xl px-4 py-16">
       <h1 className="text-heading font-semibold">{t("errors.unexpected")}</h1>
-      <Link to="/" className="mt-4 inline-block text-accent underline underline-offset-4">
-        {t("errors.backHome")}
-      </Link>
+      <div className="mt-4 flex flex-wrap items-center gap-4">
+        <button
+          type="button"
+          onClick={() => {
+            window.location.reload();
+          }}
+          className="rounded-control border border-divider px-3 py-2 text-small font-semibold hover:bg-surface"
+        >
+          {t("errors.reload")}
+        </button>
+        <Link to="/" className="text-accent underline underline-offset-4">
+          {t("errors.backHome")}
+        </Link>
+      </div>
     </main>
   );
 }

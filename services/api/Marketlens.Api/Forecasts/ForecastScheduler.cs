@@ -26,6 +26,12 @@ public sealed partial class ForecastScheduler(
     TimeProvider timeProvider,
     ILogger<ForecastScheduler> logger) : BackgroundService
 {
+    /// <summary>
+    /// The forecaster's <c>MIN_TRAINING_CLOSES</c>. A test reads the Python constant, so the two can't
+    /// drift apart silently.
+    /// </summary>
+    public const int ForecasterMinTrainingCloses = 100;
+
     /// <summary>The first closes in the history window may fall a few days after it opens (weekends, holidays).</summary>
     private const int HistoryStartToleranceDays = 7;
 
@@ -45,22 +51,51 @@ public sealed partial class ForecastScheduler(
             : Enumerable.Range(1, horizonDays).Count(day => IsWeekday(seriesEnd.AddDays(day)));
 
     /// <summary>
-    /// Whether an asset can be forecast: its daily closes reach back far enough, and the forecaster
-    /// hasn't refused its series as too short. The endpoint's "pending" versus "insufficient history".
+    /// Whether an asset can be forecast: its daily closes reach back far enough, there are as many as
+    /// the forecaster needs, and the forecaster hasn't refused its series as too short. The endpoint's
+    /// "pending" versus "insufficient history"; counting here keeps a sparse series from reading
+    /// "pending" after a restart, when the forecaster's refusal is no longer remembered.
     /// </summary>
-    public async Task<bool> HasEnoughHistoryAsync(MarketlensDbContext db, Guid assetId, CancellationToken cancellationToken)
+    public async Task<bool> HasEnoughHistoryAsync(MarketlensDbContext db, CatalogEntry listing, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(db);
-        if (failedSeriesByAsset.TryGetValue(assetId, out var failed) && failed.IsTooShort)
+        ArgumentNullException.ThrowIfNull(listing);
+        if (failedSeriesByAsset.TryGetValue(listing.Id, out var failed) && failed.IsTooShort)
         {
             return false;
         }
 
-        var historyStartUtc = HistoryStart(Today()).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        var today = Today();
+        var todayUtc = today.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        var historyStartUtc = HistoryStart(today).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
         var latestAcceptedStartUtc = historyStartUtc.AddDays(HistoryStartToleranceDays);
-        return await db.PriceCandles.AnyAsync(
-            candle => candle.AssetId == assetId && candle.Interval == CandleInterval.OneDay && candle.BucketStartUtc >= historyStartUtc && candle.BucketStartUtc <= latestAcceptedStartUtc,
+        var reachesBack = await db.PriceCandles.AnyAsync(
+            candle => candle.AssetId == listing.Id && candle.Interval == CandleInterval.OneDay && candle.BucketStartUtc >= historyStartUtc && candle.BucketStartUtc <= latestAcceptedStartUtc,
             cancellationToken);
+        if (!reachesBack)
+        {
+            return false;
+        }
+
+        var frequency = FrequencyOf(listing.Key.Class);
+        var isDaily = frequency == ForecastFrequency.Daily;
+        var closeCount = await db.PriceCandles.CountAsync(
+            candle => candle.AssetId == listing.Id && candle.Interval == CandleInterval.OneDay && candle.BucketStartUtc >= historyStartUtc && candle.BucketStartUtc < todayUtc
+                && (isDaily || (candle.BucketStartUtc.DayOfWeek != DayOfWeek.Saturday && candle.BucketStartUtc.DayOfWeek != DayOfWeek.Sunday)),
+            cancellationToken);
+        var horizonSteps = HorizonSteps(frequency, today, options.Value.HorizonDays);
+        return closeCount >= RequiredCloseCount(frequency, horizonSteps, options.Value.BacktestWeeks);
+    }
+
+    /// <summary>
+    /// Closes the forecaster needs for one series: its training minimum plus the backtest windows
+    /// (<c>forecast_closes</c> in services/forecaster/forecaster/forecast.py).
+    /// </summary>
+    public static int RequiredCloseCount(ForecastFrequency frequency, int horizonSteps, int backtestWeeks)
+    {
+        var stepsPerWeek = frequency == ForecastFrequency.Daily ? 7 : 5;
+        var windowCount = (int)Math.Ceiling(backtestWeeks * stepsPerWeek / (double)horizonSteps);
+        return ForecasterMinTrainingCloses + windowCount * horizonSteps;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

@@ -87,7 +87,7 @@
     "noPriceYet": "Pas encore de prix. Il s’affiche dès que la source de données répond.",
     "chartLabel": "Prix de {{name}} sur {{range}}",
     "chartEmpty": "Pas encore d’historique pour cette période.",
-    "dailyOnly": "Les devises ont un taux de référence par jour : les périodes courtes affichent des points quotidiens.",
+    "dailyOnly": "Ce prix a un taux de référence par jour : les périodes courtes affichent des points quotidiens.",
     "convert": "Convertir {{symbol}}",
     "ranges": {
       "1D": "1 jour",
@@ -127,7 +127,8 @@
     "retry": "Réessayer",
     "pageNotFound": "Cette page n’existe pas.",
     "backHome": "Retour à l’accueil",
-    "unexpected": "Un problème est survenu sur cette page. Rechargez-la pour réessayer.",
+    "unexpected": "Un problème est survenu sur cette page. Rechargez-la pour réessayer, ou revenez à l’accueil.",
+    "reload": "Recharger la page",
     "tooManyRequests": "Trop de requêtes depuis votre réseau. Patientez une minute puis réessayez."
   },
   "forecast": {
@@ -141,7 +142,8 @@
     "made": "Prévision du {{date}}.",
     "notAdvice": "Les prévisions sont des estimations, pas des conseils financiers.",
     "howItWorks": "Comment ça marche",
-    "pending": "La prévision est en préparation et apparaîtra d’ici quelques minutes.",
+    "pending": "La prévision est en préparation. Elle apparaît en général en quelques minutes, ou après la prochaine clôture quotidienne.",
+    "convertedToday": "Affichée en {{currency}} au taux de change du jour pour chaque jour de prévision.",
     "insufficient": "Pas encore de prévision pour {{name}} : il faut deux ans de cours quotidiens.",
     "loadFailed": "La prévision n’a pas pu être chargée.",
     "legend80": "Fourchette à 80 %",

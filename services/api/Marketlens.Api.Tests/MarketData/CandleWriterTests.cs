@@ -58,6 +58,53 @@ public sealed class CandleWriterTests(MarketlensApiFactory factory)
         Assert.Equal(0, writtenCount);
     }
 
+    [Fact]
+    public async Task UpsertAsync_skips_rows_older_than_the_retention_window()
+    {
+        var expiredBucket = CandleWriter.OldestKeptUtc(CandleInterval.OneDay, DateTime.UtcNow).AddDays(-1);
+        var writer = factory.Services.GetRequiredService<CandleWriter>();
+        var expired = new CandleRow(Ether, CandleInterval.OneDay, expiredBucket, 1m, 1m, 1m, 1m, null, "test");
+
+        var writtenCount = await writer.UpsertAsync([expired], TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, writtenCount);
+        Assert.Empty(await CandlesAt(expiredBucket));
+    }
+
+    [Fact]
+    public async Task A_candle_on_the_oldest_kept_day_survives_the_prune()
+    {
+        // The sample feed and fiat backfill write midnight buckets; the prune once cut at the time of
+        // day and deleted the oldest of them while they were being written.
+        var oldestKeptBucket = CandleWriter.OldestKeptUtc(CandleInterval.OneDay, DateTime.UtcNow);
+        var writer = factory.Services.GetRequiredService<CandleWriter>();
+        await writer.UpsertAsync(
+            [new CandleRow(Ether, CandleInterval.OneDay, oldestKeptBucket, 1m, 1m, 1m, 1m, null, "test")],
+            TestContext.Current.CancellationToken);
+
+        await writer.PruneAsync(TestContext.Current.CancellationToken);
+
+        Assert.Single(await CandlesAt(oldestKeptBucket));
+    }
+
+    [Fact]
+    public async Task Upserts_at_the_edge_of_the_window_and_prunes_running_together_never_deadlock()
+    {
+        var writer = factory.Services.GetRequiredService<CandleWriter>();
+        var catalog = factory.Services.GetRequiredService<AssetCatalog>();
+        var oldestKeptBucket = CandleWriter.OldestKeptUtc(CandleInterval.OneDay, DateTime.UtcNow);
+        var edgeRows = catalog.ActiveOf(AssetClass.Crypto)
+            .SelectMany(coin => Enumerable.Range(0, 30).Select(day =>
+                new CandleRow(coin.Key, CandleInterval.OneDay, oldestKeptBucket.AddDays(day), 1m, 1m, 1m, 1m, null, "test")))
+            .ToList();
+
+        var writes = Enumerable.Range(0, 4).Select(_ => writer.UpsertAsync(edgeRows, TestContext.Current.CancellationToken));
+        var prunes = Enumerable.Range(0, 4).Select(_ => writer.PruneAsync(TestContext.Current.CancellationToken));
+
+        var completed = await Task.WhenAll(writes.Concat(prunes));
+        Assert.All(completed.Take(4), writtenCount => Assert.Equal(edgeRows.Count, writtenCount));
+    }
+
     private async Task<List<PriceCandle>> CandlesAt(DateTime bucket)
     {
         await using var scope = factory.Services.CreateAsyncScope();

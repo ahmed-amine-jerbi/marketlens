@@ -45,7 +45,7 @@ export function ForecastNote({
     );
   }
 
-  const { status, trackRecord, createdAtUtc } = forecast.data;
+  const { status, trackRecord, createdAtUtc, in: displayIn } = forecast.data;
   if (status === "insufficient-history") {
     return (
       <p className="mt-4 text-small text-muted">
@@ -68,6 +68,12 @@ export function ForecastNote({
     baselineError: formatPercent(trackRecord.baselineErrorPct, language, 2),
   };
 
+  // The forecaster works in US dollars; other display currencies convert every day at today's rate (D51).
+  const conversionNote =
+    displayIn === "fiat:USD"
+      ? ""
+      : t("forecast.convertedToday", { currency: displayIn.split(":")[1] ?? displayIn });
+
   // A win too small to see at two decimals is not presented as a win.
   const wording = !trackRecord.beatsBaseline
     ? "forecast.notBetter"
@@ -80,7 +86,8 @@ export function ForecastNote({
       <p className="text-body">{t(wording, record)}</p>
       {!isRangeDrawn && <p className="text-small text-muted">{t("forecast.onlyOnRanges")}</p>}
       <p className="text-small text-muted">
-        {t("forecast.made", { date: formatDate(createdAtUtc, language) })} {t("forecast.notAdvice")}{" "}
+        {t("forecast.made", { date: formatDate(createdAtUtc, language) })} {conversionNote}{" "}
+        {t("forecast.notAdvice")}{" "}
         <Link to="/how-forecasts-work" className="text-accent underline underline-offset-4">
           {t("forecast.howItWorks")}
         </Link>

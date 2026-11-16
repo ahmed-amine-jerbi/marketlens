@@ -75,7 +75,7 @@ test.describe("asset page", () => {
     await page.goto("/assets/crypto:NOTACOIN");
 
     await expect(
-      page.getByRole("heading", { name: "Marketlens doesn't track “crypto:NOTACOIN”." }),
+      page.getByRole("heading", { name: "Marketlens doesn’t track “crypto:NOTACOIN”." }),
     ).toBeVisible();
   });
 });
@@ -118,7 +118,7 @@ test.describe("navigation", () => {
     await expect(page.getByRole("heading", { level: 1, name: "Crypto" })).toBeVisible();
 
     await page.goto("/no-such-page");
-    await expect(page.getByRole("heading", { name: "This page doesn't exist." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "This page doesn’t exist." })).toBeVisible();
   });
 });
 

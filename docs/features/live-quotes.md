@@ -33,6 +33,9 @@
    (subscribed to `QuoteBook.QuoteUpdated`) marks it; every second
    [BroadcastMovedAsync](../../services/api/Marketlens.Api/Quotes/QuoteBroadcaster.cs#L66) sends
    `QuoteUpdated(quote)` to each affected group.
+   A price that didn't move (same price and same reference) is announced at most once per
+   `MarketData:QuoteBook:HeartbeatInterval` (15 s), so feeds that re-report it every second don't
+   fan out to clients, but "updated N sec ago" never grows past the heartbeat for a live price.
 5. The client updates the price in place. `Unsubscribe(keys)` stops it; disconnecting cleans up.
 
 **Alternate flows:** invalid or unknown keys → `HubException` with the reason (REST: problem
@@ -81,11 +84,14 @@ sequenceDiagram
 
 - [liveQuotes.ts](../../apps/web/src/api/liveQuotes.ts): one SignalR connection for the app,
   watcher counting so components share subscriptions, resubscribe after reconnecting, and a quote
-  store read with `useSyncExternalStore`; REST answers ([queries.ts](../../apps/web/src/api/queries.ts))
+  store read with `useSyncExternalStore`. The SignalR client is imported with the first
+  subscription, so it isn't part of the first download. When automatic reconnection gives up, the
+  connection restarts after 5, 15, 30 and then every 60 seconds while anything on screen is live; REST answers ([queries.ts](../../apps/web/src/api/queries.ts))
   seed the same store.
 - [QuoteParts.tsx](../../apps/web/src/components/QuoteParts.tsx): `Price` flashes its up/down colour
   for 600 ms (skipped under reduced motion), `Change` pairs ▲/▼ and spoken text with colour,
-  `Freshness` writes "Live, updated 2 sec. ago", "Rate of Nov 8, 2026" (fiat, and Tether, whose own
+  `Freshness` writes "Live, updated 2 sec. ago" (the ticking age is its own `UpdatedAge`
+  component, so only live and delayed prices re-render each second), "Rate of Nov 8, 2026" (fiat, and Tether, whose own
   source is Frankfurter's daily rates), "Live, with the EUR rate of Nov 8, 2026" or "Sample data".
 - [AssetTable.tsx](../../apps/web/src/components/AssetTable.tsx): rows read their own quote, so a
   price update re-renders one row. Through Docker, nginx upgrades `/hubs/` to a WebSocket.
@@ -121,6 +127,7 @@ SignalR uses the same JSON conventions as REST.
 | Key | Default | Where |
 |---|---|---|
 | `Quotes:BroadcastIntervalMs` | 1000 | `appsettings.json` |
+| `MarketData:QuoteBook:HeartbeatInterval` | `00:00:15` (zero announces every tick) | `appsettings.json` |
 | `RateLimits:PublicPerMinute` | 600 | `appsettings.json` |
 | Hub limits (50 keys, 5 connections, 10 subscribes / 10 s) | constants | `QuotesHub` |
 
@@ -135,7 +142,10 @@ SignalR uses the same JSON conventions as REST.
 
 [QuotesHubTests](../../services/api/Marketlens.Api.Tests/Quotes/QuotesHubTests.cs) (real SignalR
 client: subscribe answer, pushed update converted, 51 keys, unknown key, refused subscribe can't
-unwatch another client, 6th connection) and
+unwatch another client, 6th connection),
+[QuoteBookTests](../../services/api/Marketlens.Api.Tests/MarketData/QuoteBookTests.cs) (an unchanged
+price is stored silently, re-announced after the heartbeat, a rolled reference or a new previous
+close is announced) and
 [PublicEndpointsTests](../../services/api/Marketlens.Api.Tests/Http/PublicEndpointsTests.cs)
 (paging, search, quotes in EUR, asset detail, rate limit). By hand:
 `curl "localhost:5080/api/v1/quotes?keys=crypto:BTC,fiat:EUR&in=fiat:TND"`.
@@ -148,10 +158,13 @@ contract (`MARKETLENS_UPDATE_OPENAPI=1 dotnet test`) and the types (`npm run gen
 ## Known limitations and follow-ups
 
 - Single instance; several API instances need a SignalR backplane (ADR 0003).
-- Unchanged prices are re-sent each second for assets whose provider re-reports them.
+- The tab that loses the 5-connection limit isn't told why; its prices stop moving.
 
 ## Changelog
 
 - 2026-11-08 — Created (marketlens-v1, M2).
 - 2026-11-08 — Web screens and live store; public rate limit raised from 120 to 600 per minute per IP (M3).
 - 2026-11-09 — Tether: previous-close basis and "Rate of" label; crypto in real USD (price-and-forecast-accuracy).
+- 2026-11-16 — Unchanged prices announced once per 15 s heartbeat instead of every tick; SignalR
+  client loaded on first use; restart after reconnection gives up; per-second clock limited to live
+  rows (roadmap-and-fundamentals, PR A).

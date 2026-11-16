@@ -7,6 +7,7 @@ import { ApiProblemError, type Asset } from "../api/client";
 import { useLiveQuotes, useQuote } from "../api/liveQuotes";
 import { useAllAssets, useConversion } from "../api/queries";
 import { Freshness } from "../components/QuoteParts";
+import { LoadError } from "../components/States";
 import { useSettings } from "../settings/Settings";
 
 const exampleAmount = { en: "0.25", fr: "0,25", de: "0,25" } as const;
@@ -18,9 +19,12 @@ const exampleAmount = { en: "0.25", fr: "0,25", de: "0,25" } as const;
 export function ConverterPanel({
   initialFrom = "crypto:BTC",
   initialTo,
+  headingLevel: Heading = "h2",
 }: {
   initialFrom?: string;
   initialTo?: string;
+  /** "h1" when the panel is the page (Convert); a section of a page otherwise. */
+  headingLevel?: "h1" | "h2";
 }) {
   const { t } = useTranslation();
   const { language, displayCurrency } = useSettings();
@@ -43,12 +47,15 @@ export function ConverterPanel({
     rate !== undefined && amount !== null ? (Number(amount) * Number(rate)).toString() : null;
   const symbol = (key: string) => key.split(":")[1] ?? key;
   const problem = conversion.error instanceof ApiProblemError ? conversion.error : null;
+  const isConvertible = from !== to && amount !== null;
+  const isLoading = isConvertible && rate === undefined && conversion.isPending;
+  const hasFailed = isConvertible && conversion.isError && !problem?.isRateUnavailable;
 
   return (
     <section aria-labelledby={`${amountId}-title`} className="rounded-panel bg-surface p-5">
-      <h2 id={`${amountId}-title`} className="text-title font-semibold">
+      <Heading id={`${amountId}-title`} className="text-title font-semibold">
         {t("converter.title")}
-      </h2>
+      </Heading>
 
       <div className="mt-4 grid gap-3">
         <label htmlFor={amountId} className="block">
@@ -89,6 +96,15 @@ export function ConverterPanel({
 
       <div aria-live="polite" className="mt-5 border-t border-divider pt-4">
         {from === to && <p className="text-small text-muted">{t("converter.sameAsset")}</p>}
+        {isLoading && (
+          <div aria-hidden className="space-y-2">
+            <div className="h-4 w-32 animate-pulse rounded-control bg-background" />
+            <div className="h-9 w-48 animate-pulse rounded-control bg-background" />
+          </div>
+        )}
+        {hasFailed && (
+          <LoadError error={conversion.error} onRetry={() => void conversion.refetch()} />
+        )}
         {problem?.isRateUnavailable && (
           <p className="text-small text-down">
             {t("converter.unavailable", { asset: problem.asset ?? "" })}

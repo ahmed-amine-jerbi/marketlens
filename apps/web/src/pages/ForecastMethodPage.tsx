@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
 
+import { PageTitle } from "../app/Layout";
+
 const sections = [
   { title: "forecastMethod.rangeTitle", text: "forecastMethod.range" },
   { title: "forecastMethod.madeTitle", text: "forecastMethod.made" },
@@ -15,6 +17,7 @@ export function ForecastMethodPage() {
 
   return (
     <article className="max-w-2xl">
+      <PageTitle title={t("forecastMethod.title")} />
       <h1 className="text-heading font-semibold">{t("forecastMethod.title")}</h1>
       <p className="mt-3 text-body text-muted">{t("forecastMethod.intro")}</p>
 

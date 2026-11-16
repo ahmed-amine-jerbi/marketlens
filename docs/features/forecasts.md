@@ -42,12 +42,12 @@
 1. At startup and every 10 minutes, [ForecastScheduler](../../services/api/Marketlens.Api/Forecasts/ForecastScheduler.cs#L20)
    first asks [ForecastEvaluator](../../services/api/Marketlens.Api/Forecasts/ForecastEvaluator.cs#L27)
    to score past forecast days, and to prune forecasts older than 90 days.
-2. [FindStaleAsync](../../services/api/Marketlens.Api/Forecasts/ForecastScheduler.cs#L132)
+2. [FindStaleAsync](../../services/api/Marketlens.Api/Forecasts/ForecastScheduler.cs#L167)
    compares, with two grouped queries, each asset's newest *complete* daily close (today's
    still-open bucket left out; a weekend close counts as Friday's for business-day assets) with
    the `SeriesEndDate` of its latest forecast. Assets with a newer close are due, coins first,
    currencies last.
-3. [ForecastAsync](../../services/api/Marketlens.Api/Forecasts/ForecastScheduler.cs#L158) reads the
+3. [ForecastAsync](../../services/api/Marketlens.Api/Forecasts/ForecastScheduler.cs#L193) reads the
    last 730 days of daily closes (weekdays only for business-day assets), skips the asset if they
    don't reach back far enough, and posts them through
    [ForecasterClient](../../services/api/Marketlens.Api/Forecasts/ForecasterClient.cs#L81) to the
@@ -146,7 +146,10 @@ sequenceDiagram
   at all ends the run until the next check, since every asset would fail. History that doesn't reach
   back yet is simply re-checked (one read), because a backfill may still be filling it in.
   `HasEnoughHistoryAsync` is the same history rule for the endpoint, and treats a refused series as
-  insufficient history. The typed client recycles pooled connections every 15 minutes, so a
+  insufficient history. It also counts the closes against the forecaster's own minimum
+  (`RequiredCloseCount`: `MIN_TRAINING_CLOSES` + the backtest windows, 156 for coins and 140 for
+  business days), so a sparse series reads "insufficient history" even after a restart, when the
+  refusal is no longer remembered. A contract test reads `MIN_TRAINING_CLOSES` from `forecast.py`. The typed client recycles pooled connections every 15 minutes, so a
   recreated forecaster container is found at its new address.
 - **API: evaluation** ([ForecastEvaluator.cs](../../services/api/Marketlens.Api/Forecasts/ForecastEvaluator.cs)).
   `Evaluate` is the pure scoring rule (inside the 80% range; median error; "no change" error, both
@@ -300,8 +303,10 @@ smallest daily volatility used). The calibration uses every close it is sent, so
 - Models see only past prices: no news, earnings or shocks. Eight weeks is a small sample; most
   coins beat "no change" by chance-sized margins (why D57 always shows the range and words it
   honestly).
-- Display currencies use today's rate for every forecast day (FX uncertainty not included).
-- Failed series are remembered in memory: after an API restart each is tried once more.
+- Display currencies use today's rate for every forecast day (FX uncertainty not included); the
+  page says so under the record.
+- Failed series are remembered in memory: after an API restart each is tried once more (a series
+  too short by count is recognised without asking the forecaster).
 - Each forecast day is scored once per forecast that covers it (up to seven), so live figures weight
   days by how many forecasts reached them, as the backtest does.
 - After adding a Finnhub key, sample-data stock forecasts stay until the next complete close.
@@ -319,6 +324,9 @@ smallest daily volatility used). The calibration uses every close it is sent, so
 - 2026-11-09 — Code review fixes (D60): one asset's failure no longer stops the run and waits for
   its next close; the live record needs the whole window; outdated forecasts read `pending`;
   `MinLiveEvaluations` removed; the "no better" sentence no longer says where the range is centred.
+- 2026-11-16 — The endpoint counts closes against the forecaster's minimum; "being prepared" copy
+  no longer promises minutes for an asset waiting for its next close; a note says non-USD ranges use
+  today's rate (roadmap-and-fundamentals, PR A).
 - 2026-11-09 — Calibrated ranges (volatility-scaled conformal) replace the models' own intervals;
   the backtest scores them; method page copy updated; forecasts reset by migration
   `RepriceCryptoInUsd` along with the crypto history it repriced in USD (price-and-forecast-accuracy).
