@@ -108,7 +108,8 @@ The project uses three languages, each where it is strongest.
 |---|---|---|
 | **Frankfurter** | 161 currencies' daily reference rates, and the daily USDT rate | no |
 | **Binance** (public market data) | live crypto prices and crypto history | no |
-| **Finnhub** | live US stock and ETF prices | yes (free) |
+| **Finnhub** | live US stock and ETF prices; stock key figures, analyst counts and logos | yes (free) |
+| **SEC EDGAR** | annual revenue and net income from companies' 10-K filings | no key; a contact in `SEC_USER_AGENT` |
 | **Twelve Data** | daily stock and ETF history | yes (free) |
 | **CoinGecko** | coin logos only | yes (free, optional) |
 
@@ -292,6 +293,16 @@ point with the display currency's price at that moment, and keeps at most 500 po
 | `ForecastEvaluator.cs` | Once a forecast day has passed, compares it with the real close: inside the 80% range? how far off? how far off was "no change"? This builds the **live track record**. |
 | `ForecastEndpoints.cs` | `GET /api/v1/assets/{key}/forecast?in=`: the latest forecast in the display currency, with its track record (from the backtest until enough live results exist). |
 
+### `Fundamentals/`: key figures for stocks
+
+| File | What it does |
+|---|---|
+| `FundamentalsRefresher.cs` | Every hour: re-reads a stock's Finnhub figures once a day and its SEC annual figures once a week, 10 seconds between calls, and stores them. One failing stock never stops the others. |
+| `FundamentalsEndpoints.cs` | `GET /api/v1/assets/{key}/fundamentals?in=`: the stored figures in the display currency, the market cap moved with the live price. See [key figures](features/key-figures.md). |
+
+`MarketData/SecEdgarClient.cs` is the adapter for the SEC's company facts: it picks one revenue tag
+per company and reads five fiscal years from the 10-K filings.
+
 ### `Locale/`, `Status/`, `Data/`
 
 - [LocaleSuggester.cs](../services/api/Marketlens.Api/Locale/LocaleSuggester.cs) suggests a language
@@ -411,7 +422,7 @@ The API and the forecaster share recorded **contract fixtures**
 
 - **Everything in Docker:** `docker compose up --build`, then open <http://localhost:8080>. No keys
   are needed; add `FINNHUB_API_KEY` and `TWELVEDATA_API_KEY` to `.env` (copied from `.env.example`)
-  for real stock data.
+  for real stock data, and `SEC_USER_AGENT` for the stocks' annual revenue and net income.
 - **For development:** `docker compose up -d` (database and mail), `npm install`, then
   `cd services/api && dotnet run --project Marketlens.Api` (port 5080) and
   `cd services/forecaster && uv run uvicorn forecaster.app:app --port 8001`.

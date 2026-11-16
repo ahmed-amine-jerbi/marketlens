@@ -33,6 +33,23 @@ export function formatPrice(value: string, language: Language): string {
   return useTypographicMinus(new Intl.NumberFormat(language, options).format(amount));
 }
 
+/**
+ * A large amount in a few characters for key figures and chart axes: 5.18T, 478.8B, −267M (spelled
+ * per language: 5,18 Bio., 478,8 Mrd.). Like every formatter here, for display only.
+ */
+export function formatCompact(value: string, language: Language): string {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) {
+    return value;
+  }
+
+  const formatted = new Intl.NumberFormat(language, {
+    notation: "compact",
+    maximumSignificantDigits: 4,
+  }).format(amount);
+  return useTypographicMinus(formatted);
+}
+
 /** A change in percent with its sign and a true minus sign (+1.80 %, -0.82 %; spacing per language). Null stays empty. */
 export function formatChangePct(changePct: string | null, language: Language): string {
   if (changePct === null) {

@@ -14,7 +14,7 @@ graph LR
     Forecaster["Forecaster<br/>FastAPI + statsforecast"]
     DB[("PostgreSQL 17")]
   end
-  Providers["Frankfurter · Binance · CoinGecko<br/>Finnhub · Twelve Data"]
+  Providers["Frankfurter · Binance · CoinGecko<br/>Finnhub · Twelve Data · SEC EDGAR"]
   Push["Expo Push · Web Push"]
   Web -- "REST /api/v1, SignalR /hubs/quotes" --> API
   Mobile -- "REST /api/v1, SignalR" --> API
@@ -33,7 +33,7 @@ graph LR
 | API (.NET) | The authority: ingestion, quotes, conversions, history, forecast storage, accounts, watchlists, alert rules and evaluation, push delivery, rate limiting. |
 | Forecaster (Python) | Stateless maths: forecasts and backtests from a series the API sends. No database, no public port. |
 | PostgreSQL | Assets, candles, quote snapshots, forecasts, users, watchlists, alert rules, push subscriptions, notifications, Data Protection keys. |
-| Providers | Each behind exactly one adapter in `MarketData/`. Keys come from environment variables. |
+| Providers | Each behind exactly one adapter in `MarketData/` (Frankfurter, Binance, CoinGecko, Finnhub, Twelve Data, SEC EDGAR). Keys and the SEC contact come from environment variables. |
 
 ## Data flows
 

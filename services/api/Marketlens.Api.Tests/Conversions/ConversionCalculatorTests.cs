@@ -141,6 +141,19 @@ public sealed class ConversionCalculatorTests
         Assert.False(isConverted);
     }
 
+    [Theory]
+    [InlineData("-267000000", "0.5", "-534000000")]
+    [InlineData("0", "1.1621", "0")]
+    [InlineData("478834000000", "1.25", "383067200000")]
+    public void ConvertSignedAmount_converts_losses_zero_and_totals_into_the_display_currency(string amountUsd, string displayPriceUsd, string expected)
+    {
+        var converted = ConversionCalculator.ConvertSignedAmount(
+            decimal.Parse(amountUsd, CultureInfo.InvariantCulture),
+            decimal.Parse(displayPriceUsd, CultureInfo.InvariantCulture));
+
+        Assert.Equal(decimal.Parse(expected, CultureInfo.InvariantCulture), converted);
+    }
+
     private static UsdQuote Quote(string key, decimal priceUsd, decimal? reference, DateTime asOfUtc, Freshness freshness) =>
         new(AssetKey.Parse(key), priceUsd, reference, asOfUtc, "test", freshness);
 }

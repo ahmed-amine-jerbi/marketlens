@@ -6,8 +6,9 @@ using Marketlens.Api.MarketData;
 namespace Marketlens.Api.Tests.MarketData;
 
 /// <summary>
-/// Fixtures for these adapters follow the providers' documented response shapes; they were not
-/// recorded live because no API keys existed when they were written (D44).
+/// Finnhub REST fixtures (quote, profile, metrics, recommendations, earnings calendar) are trimmed
+/// recordings from 2026-11-16; the trade stream and CoinGecko fixtures still follow the documented
+/// shapes (D44).
 /// </summary>
 public sealed class FinnhubAndCoinGeckoTests : IDisposable
 {
@@ -27,9 +28,116 @@ public sealed class FinnhubAndCoinGeckoTests : IDisposable
         var quote = FinnhubClient.ParseQuote(Apple, quoteJson.RootElement);
 
         Assert.NotNull(quote);
-        Assert.Equal(231.4m, quote.PriceUsd);
-        Assert.Equal(230.02m, quote.PreviousCloseUsd);
-        Assert.Equal(DateTime.UnixEpoch.AddSeconds(1794168000), quote.TradedAtUtc);
+        Assert.Equal(355.24m, quote.PriceUsd);
+        Assert.Equal(356.27m, quote.PreviousCloseUsd);
+        Assert.Equal(DateTime.UnixEpoch.AddSeconds(1794846081), quote.TradedAtUtc);
+    }
+
+    [Fact]
+    public void ParseCompanyProfile_reads_the_profile_in_whole_units()
+    {
+        using var profileJson = JsonDocument.Parse(ProviderFixtures.Read("finnhub-profile2-aapl.json"));
+
+        var profile = FinnhubClient.ParseCompanyProfile(profileJson.RootElement);
+
+        Assert.NotNull(profile);
+        Assert.Equal("Technology", profile.Industry);
+        Assert.Equal("NASDAQ NMS - GLOBAL MARKET", profile.Exchange);
+        Assert.Equal(new DateOnly(1980, 12, 12), profile.IpoDate);
+        Assert.Equal(new Uri("https://www.apple.com/"), profile.WebsiteUrl);
+        Assert.Equal("static2.finnhub.io", profile.LogoUrl?.Host);
+        Assert.Equal(5_177_380_424_341.398m, profile.MarketCapUsd);
+        Assert.Equal(14_594_180_000m, profile.SharesOutstanding);
+    }
+
+    [Theory]
+    [InlineData("""{"ticker":"X","weburl":"http://example.com/"}""")]
+    [InlineData("""{"ticker":"X","weburl":"javascript:alert(1)"}""")]
+    [InlineData("""{"ticker":"X","weburl":"/relative"}""")]
+    public void ParseCompanyProfile_keeps_only_absolute_https_websites(string json)
+    {
+        using var profileJson = JsonDocument.Parse(json);
+
+        Assert.Null(FinnhubClient.ParseCompanyProfile(profileJson.RootElement)?.WebsiteUrl);
+    }
+
+    [Fact]
+    public void ParseCompanyProfile_drops_a_logo_from_another_host_and_cuts_long_text()
+    {
+        var longIndustry = new string('x', FinnhubClient.MaxTextLength + 50);
+        using var profileJson = JsonDocument.Parse($$"""{"ticker":"X","logo":"https://images.example.com/x.png","finnhubIndustry":"{{longIndustry}}"}""");
+
+        var profile = FinnhubClient.ParseCompanyProfile(profileJson.RootElement);
+
+        Assert.NotNull(profile);
+        Assert.Null(profile.LogoUrl);
+        Assert.Equal(FinnhubClient.MaxTextLength, profile.Industry?.Length);
+    }
+
+    [Fact]
+    public void ParseCompanyProfile_leaves_money_out_for_a_company_reporting_in_another_currency()
+    {
+        using var profileJson = JsonDocument.Parse("""{"ticker":"ASML","currency":"EUR","marketCapitalization":250000,"shareOutstanding":390}""");
+
+        var profile = FinnhubClient.ParseCompanyProfile(profileJson.RootElement);
+
+        Assert.NotNull(profile);
+        Assert.Null(profile.MarketCapUsd);
+        Assert.Equal(390_000_000m, profile.SharesOutstanding);
+    }
+
+    [Fact]
+    public void ParseCompanyProfile_returns_null_for_an_unknown_symbol()
+    {
+        using var empty = JsonDocument.Parse("{}");
+
+        Assert.Null(FinnhubClient.ParseCompanyProfile(empty.RootElement));
+    }
+
+    [Fact]
+    public void ParseBasicFinancials_reads_the_ratios_and_leaves_a_missing_pe_empty_for_a_loss()
+    {
+        using var apple = JsonDocument.Parse(ProviderFixtures.Read("finnhub-metric-aapl.json"));
+        using var intel = JsonDocument.Parse(ProviderFixtures.Read("finnhub-metric-intc.json"));
+
+        var appleFigures = FinnhubClient.ParseBasicFinancials(apple.RootElement);
+        var intelFigures = FinnhubClient.ParseBasicFinancials(intel.RootElement);
+
+        Assert.Equal(new BasicFinancials(39.1706m, 8.974499999999999m, 0.50534m, 360.83m, 243.42m, 1.0898671m), appleFigures);
+        Assert.Null(intelFigures.PeRatio);
+        Assert.Equal(-2.3913m, intelFigures.EpsTtmUsd);
+    }
+
+    [Fact]
+    public void ParseRecommendationTrends_returns_the_months_newest_first()
+    {
+        using var trendsJson = JsonDocument.Parse(ProviderFixtures.Read("finnhub-recommendation-aapl.json"));
+
+        var trends = FinnhubClient.ParseRecommendationTrends(trendsJson.RootElement);
+
+        Assert.Equal(new RecommendationTrend(new DateOnly(2026, 11, 1), 11, 19, 15, 3, 1), trends[0]);
+        Assert.True(trends.Count > 1);
+        Assert.True(trends[0].Period > trends[1].Period);
+    }
+
+    [Fact]
+    public void ParseRecommendationTrends_keeps_one_row_per_month()
+    {
+        using var repeated = JsonDocument.Parse("""
+            [{"period":"2026-11-01","strongBuy":1,"buy":2,"hold":3,"sell":0,"strongSell":0},
+             {"period":"2026-11-01","strongBuy":1,"buy":2,"hold":3,"sell":0,"strongSell":0}]
+            """);
+
+        Assert.Single(FinnhubClient.ParseRecommendationTrends(repeated.RootElement));
+    }
+
+    [Fact]
+    public void ParseNextEarningsDate_reads_the_first_scheduled_date()
+    {
+        using var calendar = JsonDocument.Parse(ProviderFixtures.Read("finnhub-earnings-calendar-aapl.json"));
+
+        Assert.Equal(new DateOnly(2027, 1, 27), FinnhubClient.ParseNextEarningsDate(calendar.RootElement, new DateOnly(2026, 11, 16)));
+        Assert.Null(FinnhubClient.ParseNextEarningsDate(calendar.RootElement, new DateOnly(2027, 2, 1)));
     }
 
     [Fact]

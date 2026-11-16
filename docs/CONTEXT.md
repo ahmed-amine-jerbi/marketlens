@@ -9,8 +9,10 @@ technologies and the code, read the [project guide](project-guide.md).
 Marketlens is an open-source (MIT) web and mobile app for everyday people who check exchange
 rates, convert money, and follow a few coins and stocks. It shows live prices for fiat currencies,
 cryptocurrencies, US stocks and world-index ETFs, converts between any two, charts their history,
-and draws an honest 1–7 day forecast range with a measured track record. It is not a trading tool
-and gives no buy or sell signals.
+and draws an honest 1–7 day forecast range with a measured track record. Stock pages add key
+figures: market cap and ratios, five years of revenue and net income from SEC filings, and what
+analysts reported. It is not a trading tool, and Marketlens itself gives no buy or sell signals;
+analyst counts are shown as other people's opinions with their source.
 
 ## 2. Users and key flows
 
@@ -64,6 +66,7 @@ Full list with walkthroughs: [features/README.md](features/README.md).
 | Localization | `packages/shared/src/i18n`, `apps/web/src/settings/`, `Locale/` | web shipped (M3); GeoLite2 D47 | [features/localization.md](features/localization.md) |
 | Forecasts | `services/forecaster`, `Forecasts/`, `apps/web/src/forecasts/` | web shipped (M4); mobile M7 | [features/forecasts.md](features/forecasts.md) |
 | Accounts and sign-in | `Accounts/` | planned (M5) | `features/accounts-and-sign-in.md` |
+| Key figures (stock fundamentals) | `Fundamentals/`, `MarketData/SecEdgarClient.cs`, `apps/web/src/fundamentals/` | web shipped (2026-11-16); mobile M7 | [features/key-figures.md](features/key-figures.md) |
 | Watchlists | `apps/web/src/watchlist/` (device); `Watchlists/` (M5) | web shipped on the device (M3); sync M5 | [features/watchlists.md](features/watchlists.md) |
 | Price alerts | `Alerts/` | planned (M6) | `features/price-alerts.md` |
 | Market news | `News/` | planned (M6) | `features/market-news.md` |
@@ -104,6 +107,9 @@ Project-specific:
 | **Baseline** | The "no change" forecast (the last close carried forward). The chosen model must beat it in the backtest; otherwise the range is the baseline's, and the page says so (D57). |
 | **Backtest** | Rolling re-forecast of past data to measure a model before showing it. |
 | **Track record** | How often the real price stayed inside the 80% band and the typical miss next to the baseline's, from the backtest or, once Marketlens's own forecasts have been checked across the whole 8-week window, from live results. |
+| **Key figures** | A stock's market cap, ratios, dates and profile, its annual revenue and net income, and analyst counts ("Key figures" in the UI; `Fundamentals` in the API and code). |
+| **Fiscal year** | A company's reporting year as filed in its 10-K, labelled by the year it ends ("FY 2026"). |
+| **Analyst counts** | How many analysts rated a stock strong buy … strong sell in a month, as reported to Finnhub; never a Marketlens recommendation. |
 | **Forecast range** | The 80% and 95% bands drawn on the chart after the last close; "forecast range" in UI copy, never "prediction". Sized by calibration on the asset's own past moves, scaled to its current volatility. |
 | **Typical miss** | UI words for mean absolute % error of the median. |
 | **Watchlist** | A user's ordered list of asset keys; on the device when signed out, synced when signed in. |
@@ -129,6 +135,8 @@ Visual design section.
   OpenAPI at `/openapi/v1.json`, live hub at `/hubs/quotes`), forecaster `uv run uvicorn` on
   :8001, web `npm run dev -w @marketlens/web` on :5173 (proxies `/api` and `/hubs` to :5080). No keys
   needed. E2E + axe: `npm run test:e2e -w @marketlens/web` against :8080.
+- **Key figures:** `FINNHUB_API_KEY` for figures and analyst counts, `SEC_USER_AGENT` (an app name
+  and contact e-mail the SEC requires) for annual revenue and net income; both optional.
 - **Public demo:** after v1, gated on checking each provider's display terms.
 - **Config:** non-secret defaults in `services/api/Marketlens.Api/appsettings.json`; secrets and
   per-deployment values from environment variables, all listed in [`.env.example`](../.env.example)
@@ -162,6 +170,11 @@ decisions:
   conformal) instead of the models' intervals: on real prices the 80% range held 79% (coins) and
   81% (currencies) out of sample, crypto ranges ~30% narrower. Rejected: a live Coinbase USDT
   ticker (new provider for a 0.1% correction), new models for the centre line (no measurable gain).
+- 2026-11-16 Key figures for stocks from Finnhub's free fundamentals and SEC EDGAR filings
+  (see [features/key-figures.md](features/key-figures.md)): market cap is
+  Finnhub's moved with the live price (its share counts were wrong for BRK.B); one SEC revenue tag
+  per company; three new tables; no figures without a key. Rejected: Twelve Data fundamentals (paid
+  plans), FMP / Alpha Vantage (new keys, licences), invented sample figures.
 - 2026-11-16 Polish pass: one candle cut-off (`CandleWriter.OldestKeptUtc`) shared by writers and the
   prune fixes the startup deadlock; a repeated live price is announced at most every 15 s
   (`MarketData:QuoteBook:HeartbeatInterval`); the forecast endpoint counts closes against the
@@ -195,6 +208,9 @@ decisions:
 - **Add a forecasting model:** one entry in `CANDIDATE_MODELS`
   (`services/forecaster/forecaster/forecast.py`); the backtest decides when it is used. Time it on
   730 real closes first. See [features/forecasts.md](features/forecasts.md).
+- **Add a key figure:** see "Extending it" in [features/key-figures.md](features/key-figures.md):
+  parser field, nullable column + migration, refresher and endpoint line, regenerate, one row in
+  `KeyFigures`.
 - **Add a background job:** a `BackgroundService` in its feature folder, registered in
   `Program.cs` after the services it depends on (hosted services start in order); never let an
   exception escape the loop.

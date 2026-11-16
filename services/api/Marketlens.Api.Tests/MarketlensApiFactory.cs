@@ -38,6 +38,11 @@ public sealed class MarketlensApiFactory : WebApplicationFactory<Program>, IAsyn
         builder.UseEnvironment("Testing");
         builder.UseSetting("DATABASE_URL", postgres.GetConnectionString());
 
+        // A developer's shell may export real keys; the shared host must never reach live providers.
+        // Tests that need a key build their own client over fixtures.
+        builder.UseSetting("FINNHUB_API_KEY", string.Empty);
+        builder.UseSetting("SEC_USER_AGENT", string.Empty);
+
         // The sample feed writes its history after startup; the scheduler must notice within a test's wait.
         builder.UseSetting("Forecasts:CheckInterval", "00:00:01");
 
@@ -48,6 +53,8 @@ public sealed class MarketlensApiFactory : WebApplicationFactory<Program>, IAsyn
         {
             services.AddHttpClient<FrankfurterClient>().ConfigurePrimaryHttpMessageHandler(() => new ProviderFixtures());
             services.AddHttpClient<BinanceMarketDataClient>().ConfigurePrimaryHttpMessageHandler(() => new ProviderFixtures());
+            services.AddHttpClient<FinnhubClient>().ConfigurePrimaryHttpMessageHandler(() => new ProviderFixtures());
+            services.AddHttpClient<SecEdgarClient>().ConfigurePrimaryHttpMessageHandler(() => new ProviderFixtures());
             services.AddHttpClient<ForecasterClient>().ConfigurePrimaryHttpMessageHandler(() => new ForecasterStub());
 
             // WebSocket streams can't be answered from fixtures; their frame parsing is unit-tested.

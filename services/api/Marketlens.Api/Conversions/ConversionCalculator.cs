@@ -66,6 +66,14 @@ public static class ConversionCalculator
         }
     }
 
+    /// <summary>
+    /// A US-dollar amount in the display currency. Unlike a price, an amount can be zero or negative
+    /// (a loss), so it is multiplied by the display rate instead of going through <see cref="Rate"/>,
+    /// which only takes positive prices (D19).
+    /// </summary>
+    public static decimal ConvertSignedAmount(decimal amountUsd, decimal displayPriceUsd) =>
+        RoundToSignificantDigits(amountUsd * Rate(1m, displayPriceUsd));
+
     /// <summary>How many units of the second asset one unit of the first is worth, from their USD prices.</summary>
     public static decimal Rate(decimal fromPriceUsd, decimal toPriceUsd)
     {

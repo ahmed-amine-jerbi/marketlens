@@ -545,6 +545,84 @@
         }
       }
     },
+    "/api/v1/assets/{key}/fundamentals": {
+      "get": {
+        "tags": [
+          "Fundamentals"
+        ],
+        "summary": "Get a stock\u0027s key figures, annual revenue and net income, and analyst recommendation counts",
+        "operationId": "GetAssetFundamentals",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "in",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FundamentalsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/status": {
       "get": {
         "tags": [
@@ -630,6 +708,64 @@
   },
   "components": {
     "schemas": {
+      "AnalystTrendResponse": {
+        "required": [
+          "periodUtc",
+          "strongBuy",
+          "buy",
+          "hold",
+          "sell",
+          "strongSell"
+        ],
+        "type": "object",
+        "properties": {
+          "periodUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "strongBuy": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "buy": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "hold": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "sell": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "strongSell": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "How many analysts rated the stock strong buy \u2026 strong sell in a month, as Finnhub reports it."
+      },
       "AssetClass": {
         "enum": [
           "fiat",
@@ -730,6 +866,49 @@
         ],
         "description": "What a quote\u0027s change is measured against (D40)."
       },
+      "CompanyProfileResponse": {
+        "required": [
+          "industry",
+          "country",
+          "exchange",
+          "ipoDateUtc",
+          "websiteUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "industry": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "country": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "exchange": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ipoDateUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "websiteUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "ConversionLegResponse": {
         "required": [
           "key",
@@ -817,6 +996,34 @@
             }
           }
         }
+      },
+      "FinancialYearResponse": {
+        "required": [
+          "periodEndUtc",
+          "revenue",
+          "netIncome"
+        ],
+        "type": "object",
+        "properties": {
+          "periodEndUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "revenue": {
+            "pattern": "^-?[0-9]\u002B(\\.[0-9]\u002B)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "netIncome": {
+            "pattern": "^-?[0-9]\u002B(\\.[0-9]\u002B)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          }
+        },
+        "description": "One fiscal year from the company\u0027s 10-K, in the display currency; net income can be negative."
       },
       "ForecastPointResponse": {
         "required": [
@@ -933,6 +1140,80 @@
         ],
         "description": "How current a price is. Ordered from freshest to slowest."
       },
+      "FundamentalsResponse": {
+        "required": [
+          "status",
+          "in",
+          "asOfUtc",
+          "profile",
+          "figures",
+          "financialYears",
+          "analystTrends",
+          "sources"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/FundamentalsStatus"
+          },
+          "in": {
+            "$ref": "#/components/schemas/AssetKey"
+          },
+          "asOfUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "profile": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CompanyProfileResponse"
+              }
+            ]
+          },
+          "figures": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/KeyFiguresResponse"
+              }
+            ]
+          },
+          "financialYears": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FinancialYearResponse"
+            }
+          },
+          "analystTrends": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnalystTrendResponse"
+            }
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "FundamentalsStatus": {
+        "enum": [
+          "available",
+          "pending",
+          "no-provider-key",
+          "not-covered"
+        ]
+      },
       "HistoryPoint": {
         "required": [
           "t",
@@ -972,6 +1253,94 @@
             }
           }
         }
+      },
+      "KeyFiguresResponse": {
+        "required": [
+          "marketCap",
+          "sharesOutstanding",
+          "peRatio",
+          "epsTtm",
+          "dividendYieldPct",
+          "high52Week",
+          "low52Week",
+          "beta",
+          "nextEarningsDateUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "marketCap": {
+            "pattern": "^-?[0-9]\u002B(\\.[0-9]\u002B)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "sharesOutstanding": {
+            "pattern": "^-?[0-9]\u002B(\\.[0-9]\u002B)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "peRatio": {
+            "pattern": "^-?[0-9]\u002B(\\.[0-9]\u002B)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "epsTtm": {
+            "pattern": "^-?[0-9]\u002B(\\.[0-9]\u002B)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "dividendYieldPct": {
+            "pattern": "^-?[0-9]\u002B(\\.[0-9]\u002B)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "high52Week": {
+            "pattern": "^-?[0-9]\u002B(\\.[0-9]\u002B)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "low52Week": {
+            "pattern": "^-?[0-9]\u002B(\\.[0-9]\u002B)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "beta": {
+            "pattern": "^-?[0-9]\u002B(\\.[0-9]\u002B)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "nextEarningsDateUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        },
+        "description": "Money (market cap, EPS, 52-week range) in the display currency; the rest unitless."
       },
       "LocaleSuggestion": {
         "required": [
@@ -1206,6 +1575,10 @@
     {
       "name": "Forecasts",
       "description": "Ranges for the next days with their measured track record; estimates, not financial advice."
+    },
+    {
+      "name": "Fundamentals",
+      "description": "A stock\u0027s key figures, annual revenue and net income from its filings, and what analysts reported; information, not financial advice."
     },
     {
       "name": "Status",

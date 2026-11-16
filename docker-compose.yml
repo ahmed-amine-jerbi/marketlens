@@ -41,6 +41,7 @@ services:
       FINNHUB_API_KEY: ${FINNHUB_API_KEY:-}
       TWELVEDATA_API_KEY: ${TWELVEDATA_API_KEY:-}
       COINGECKO_DEMO_API_KEY: ${COINGECKO_DEMO_API_KEY:-}
+      SEC_USER_AGENT: ${SEC_USER_AGENT:-}
       BINANCE_MARKET_DATA_BASE_URL: ${BINANCE_MARKET_DATA_BASE_URL:-https://data-api.binance.vision}
       BINANCE_STREAM_BASE_URL: ${BINANCE_STREAM_BASE_URL:-wss://data-stream.binance.vision}
       FORECASTER_BASE_URL: http://forecaster:8001
