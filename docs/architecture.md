@@ -29,7 +29,7 @@ graph LR
 
 | Layer | Responsibility |
 |---|---|
-| Clients (web, mobile) | Render, local UI state, format numbers and dates per locale, keep a signed-out watchlist and settings on the device. They send intent and never call providers or compute rates. |
+| Clients (web, mobile) | Render, local UI state, format numbers and dates per locale, keep a signed-out watchlist and settings on the device. They send intent and never call providers or compute rates; the chart comparison's % change is display arithmetic on two prices the API served. |
 | API (.NET) | The authority: ingestion, quotes, conversions, history, forecast storage, accounts, watchlists, alert rules and evaluation, push delivery, rate limiting. |
 | Forecaster (Python) | Stateless maths: forecasts and backtests from a series the API sends. No database, no public port. |
 | PostgreSQL | Assets, candles, quote snapshots, forecasts, users, watchlists, alert rules, push subscriptions, notifications, Data Protection keys. |
