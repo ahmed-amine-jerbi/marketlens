@@ -108,7 +108,7 @@ The project uses three languages, each where it is strongest.
 |---|---|---|
 | **Frankfurter** | 161 currencies' daily reference rates, and the daily USDT rate | no |
 | **Binance** (public market data) | live crypto prices and crypto history | no |
-| **Finnhub** | live US stock and ETF prices; stock key figures, analyst counts and logos | yes (free) |
+| **Finnhub** | live US stock and ETF prices; stock key figures, analyst counts, logos and news | yes (free) |
 | **SEC EDGAR** | annual revenue and net income from companies' 10-K filings | no key; a contact in `SEC_USER_AGENT` |
 | **Twelve Data** | daily stock and ETF history | yes (free) |
 | **CoinGecko** | coin logos only | yes (free, optional) |
@@ -299,6 +299,13 @@ point with the display currency's price at that moment, and keeps at most 500 po
 |---|---|
 | `FundamentalsRefresher.cs` | Every hour: re-reads a stock's Finnhub figures once a day and its SEC annual figures once a week, 10 seconds between calls, and stores them. One failing stock never stops the others. |
 | `FundamentalsEndpoints.cs` | `GET /api/v1/assets/{key}/fundamentals?in=`: the stored figures in the display currency, the market cap moved with the live price. See [key figures](features/key-figures.md). |
+
+### `News/`: market and company news
+
+| File | What it does |
+|---|---|
+| `NewsService.cs` | Fetches Finnhub news when someone reads it and keeps each list in memory for 15 minutes; if Finnhub fails, the last list is served. |
+| `NewsEndpoints.cs` | `GET /api/v1/news?category=markets\|crypto\|all` and `GET /api/v1/assets/{key}/news`. See [market news](features/market-news.md). |
 
 `MarketData/SecEdgarClient.cs` is the adapter for the SEC's company facts: it picks one revenue tag
 per company and reads five fiscal years from the 10-K filings.

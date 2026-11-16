@@ -146,6 +146,33 @@ export function useForecast(key: string, displayIn: string) {
   });
 }
 
+export type NewsCategory = "markets" | "crypto" | "all";
+
+/** Market or crypto news; the API caches each list for 15 minutes, so a refetch costs nothing upstream. */
+export function useNews(category: NewsCategory, limit: number) {
+  return useQuery({
+    queryKey: ["news", category, limit],
+    queryFn: async ({ signal }) =>
+      unwrap(await api.GET("/api/v1/news", { params: { query: { category, limit } }, signal })),
+    staleTime: 5 * ONE_MINUTE,
+  });
+}
+
+/** The last week's news about a stock. */
+export function useAssetNews(key: string, limit: number) {
+  return useQuery({
+    queryKey: ["asset-news", key, limit],
+    queryFn: async ({ signal }) =>
+      unwrap(
+        await api.GET("/api/v1/assets/{key}/news", {
+          params: { path: { key }, query: { limit } },
+          signal,
+        }),
+      ),
+    staleTime: 5 * ONE_MINUTE,
+  });
+}
+
 /** A stock's key figures; they change once a day, and the market cap with the price on each load. */
 export function useFundamentals(key: string, displayIn: string) {
   return useQuery({

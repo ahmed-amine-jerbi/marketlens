@@ -623,6 +623,141 @@
         }
       }
     },
+    "/api/v1/news": {
+      "get": {
+        "tags": [
+          "News"
+        ],
+        "summary": "Get the latest stock-market or crypto news, newest first",
+        "operationId": "GetMarketNews",
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/assets/{key}/news": {
+      "get": {
+        "tags": [
+          "News"
+        ],
+        "summary": "Get the last week\u0027s news about a stock, newest first",
+        "operationId": "GetAssetNews",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/status": {
       "get": {
         "tags": [
@@ -1361,6 +1496,80 @@
           }
         }
       },
+      "NewsArticleResponse": {
+        "required": [
+          "id",
+          "headline",
+          "summary",
+          "source",
+          "url",
+          "imageUrl",
+          "publishedAtUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "headline": {
+            "type": "string"
+          },
+          "summary": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "source": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "publishedAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "One article; the link and picture point to the publisher, who owns the content."
+      },
+      "NewsResponse": {
+        "required": [
+          "status",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/NewsStatus"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NewsArticleResponse"
+            }
+          }
+        }
+      },
+      "NewsStatus": {
+        "enum": [
+          "available",
+          "unavailable",
+          "no-provider-key",
+          "not-covered"
+        ]
+      },
       "ProblemDetails": {
         "type": "object",
         "properties": {
@@ -1575,6 +1784,10 @@
     {
       "name": "Forecasts",
       "description": "Ranges for the next days with their measured track record; estimates, not financial advice."
+    },
+    {
+      "name": "News",
+      "description": "Stock-market, crypto and company news from Finnhub; headlines link to the publishers."
     },
     {
       "name": "Fundamentals",

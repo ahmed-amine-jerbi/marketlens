@@ -6,7 +6,7 @@ import { PageTitle } from "../app/Layout";
 import { rovingIndex } from "../components/rovingFocus";
 import { ApiProblemError } from "../api/client";
 import { useLiveQuotes, useQuote } from "../api/liveQuotes";
-import { chartRanges, useAsset, useForecast, type ChartRange } from "../api/queries";
+import { chartRanges, useAsset, useAssetNews, useForecast, type ChartRange } from "../api/queries";
 import { WatchToggle } from "../components/AssetTable";
 import { forecastRanges, PriceChart } from "../components/PriceChart";
 import { Change, Freshness, Price } from "../components/QuoteParts";
@@ -14,6 +14,7 @@ import { LoadError } from "../components/States";
 import { ConverterPanel } from "../conversions/ConverterPanel";
 import { ForecastNote } from "../forecasts/ForecastNote";
 import { KeyFigures } from "../fundamentals/KeyFigures";
+import { NewsList } from "../news/NewsList";
 import { useSettings } from "../settings/Settings";
 
 /**
@@ -167,7 +168,10 @@ export function AssetPage() {
           <ForecastNote forecast={forecast} assetName={asset.name} isRangeDrawn={isRangeDrawn} />
         )}
         {asset.class === "stock" && (
-          <KeyFigures assetKey={asset.key} assetName={asset.name} displayIn={displayCurrency} />
+          <>
+            <KeyFigures assetKey={asset.key} assetName={asset.name} displayIn={displayCurrency} />
+            <CompanyNews assetKey={asset.key} assetName={asset.name} />
+          </>
         )}
       </article>
 
@@ -175,5 +179,26 @@ export function AssetPage() {
         <ConverterPanel key={asset.key} initialFrom={asset.key} />
       </aside>
     </div>
+  );
+}
+
+const COMPANY_NEWS_SHOWN = 8;
+
+/** The last week's headlines about a stock (D27). */
+function CompanyNews({ assetKey, assetName }: { assetKey: string; assetName: string }) {
+  const { t } = useTranslation();
+  const news = useAssetNews(assetKey, COMPANY_NEWS_SHOWN);
+
+  return (
+    <section aria-labelledby="company-news-title" className="mt-10">
+      <h2 id="company-news-title" className="text-title font-semibold">
+        {t("news.companyTitle", { name: assetName })}
+      </h2>
+      <p className="mt-1 text-small text-muted">{t("news.companyIntro", { name: assetName })}</p>
+      <div className="mt-3 rounded-panel bg-surface px-4">
+        <NewsList news={news} emptyText={t("news.companyEmpty", { name: assetName })} rows={4} />
+      </div>
+      <p className="mt-2 text-caption text-muted">{t("news.notice")}</p>
+    </section>
   );
 }

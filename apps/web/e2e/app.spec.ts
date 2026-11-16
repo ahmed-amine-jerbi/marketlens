@@ -21,6 +21,40 @@ test.describe("watchlist", () => {
   });
 });
 
+test.describe("news", () => {
+  test("the home page shows the latest news with a way to the News page", async ({ page }) => {
+    await page.goto("/");
+
+    const latest = page.getByRole("region", { name: "Latest news" });
+    await expect(latest).toBeVisible();
+    await expect(
+      latest
+        .getByRole("article")
+        .first()
+        .or(latest.getByText(/News needs a Finnhub API key|No news right now|couldn’t be fetched/)),
+    ).toBeVisible();
+
+    await latest.getByRole("link", { name: "More news" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "News" })).toBeVisible();
+  });
+
+  test("the News page switches between markets and crypto with the keyboard", async ({ page }) => {
+    await page.goto("/news");
+
+    const markets = page.getByRole("tab", { name: "Markets" });
+    await expect(markets).toHaveAttribute("aria-selected", "true");
+    await markets.focus();
+    await page.keyboard.press("ArrowRight");
+
+    await expect(page.getByRole("tab", { name: "Crypto" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await expect(page.getByRole("tab", { name: "Crypto" })).toBeFocused();
+    await expect(page.getByRole("tabpanel")).toBeVisible();
+  });
+});
+
 test.describe("asset page", () => {
   test("shows a live price, its change and a chart, and switches range", async ({ page }) => {
     await page.goto("/assets/crypto:BTC");
@@ -178,6 +212,7 @@ const pages = [
   "/markets/currencies",
   "/assets/crypto:BTC",
   "/assets/stock:ADBE",
+  "/news",
   "/convert",
   "/data-sources",
   "/how-forecasts-work",
