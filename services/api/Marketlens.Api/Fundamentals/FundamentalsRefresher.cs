@@ -115,7 +115,6 @@ public sealed partial class FundamentalsRefresher(
 
         var fetchedByAsset = await ReadFetchTimesAsync(cancellationToken);
         var nowUtc = timeProvider.GetUtcNow().UtcDateTime;
-        var logoByAsset = new Dictionary<AssetKey, string>();
 
         foreach (var listing in catalog.ActiveOf(AssetClass.Stock))
         {
@@ -126,23 +125,13 @@ public sealed partial class FundamentalsRefresher(
 
             if (isFinnhubDue && listing.ProviderRefs.FinnhubSymbol is { } symbol)
             {
-                string? logoUrl = null;
-                await TryRefreshAsync(listing, FinnhubClient.SourceName, async token => logoUrl = await RefreshFromFinnhubAsync(listing, symbol, token), cancellationToken);
-                if (logoUrl is not null && logoUrl != listing.LogoUrl)
-                {
-                    logoByAsset[listing.Key] = logoUrl;
-                }
+                await TryRefreshAsync(listing, FinnhubClient.SourceName, token => RefreshFromFinnhubAsync(listing, symbol, token), cancellationToken);
             }
 
             if (isSecDue && secCikBySymbol.TryGetValue(listing.Key.Symbol, out var cik))
             {
                 await TryRefreshAsync(listing, SecEdgarClient.SourceName, token => RefreshFromSecAsync(listing, cik, token), cancellationToken);
             }
-        }
-
-        if (logoByAsset.Count > 0)
-        {
-            await catalog.UpdateLogosAsync(logoByAsset, cancellationToken);
         }
     }
 
@@ -164,8 +153,7 @@ public sealed partial class FundamentalsRefresher(
         }
     }
 
-    /// <returns>The company's logo URL, for the catalogue.</returns>
-    private async Task<string?> RefreshFromFinnhubAsync(CatalogEntry listing, string symbol, CancellationToken cancellationToken)
+    private async Task RefreshFromFinnhubAsync(CatalogEntry listing, string symbol, CancellationToken cancellationToken)
     {
         var profile = await finnhub.FetchCompanyProfileAsync(symbol, cancellationToken);
         await PauseAsync(cancellationToken);
@@ -216,7 +204,13 @@ public sealed partial class FundamentalsRefresher(
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         LogRefreshed(logger, FinnhubClient.SourceName, listing.Key);
-        return profile?.LogoUrl?.AbsoluteUri;
+
+        // Stored per stock, not at the end of a run: a restart mid-run would otherwise lose the logos
+        // of every stock refreshed before it until their next daily refresh.
+        if (profile?.LogoUrl?.AbsoluteUri is { } logoUrl && logoUrl != listing.LogoUrl)
+        {
+            await catalog.UpdateLogosAsync(new Dictionary<AssetKey, string> { [listing.Key] = logoUrl }, cancellationToken);
+        }
     }
 
     private async Task RefreshFromSecAsync(CatalogEntry listing, string secCik, CancellationToken cancellationToken)

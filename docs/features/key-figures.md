@@ -34,7 +34,8 @@
 3. For a stock due at the SEC, [RefreshFromSecAsync](../../services/api/Marketlens.Api/Fundamentals/FundamentalsRefresher.cs#L222)
    reads its company facts through [SecEdgarClient](../../services/api/Marketlens.Api/MarketData/SecEdgarClient.cs#L61)
    and replaces its rows in `asset_financial_years`.
-4. After the run, new logos go to `assets.logo_url` through `AssetCatalog.UpdateLogosAsync`.
+4. Right after a stock's Finnhub refresh, a new logo goes to `assets.logo_url` through
+   `AssetCatalog.UpdateLogosAsync`.
 5. The asset page renders [KeyFigures](../../apps/web/src/fundamentals/KeyFigures.tsx#L36) for a
    stock; it calls `GET /api/v1/assets/{key}/fundamentals?in=<display currency>`.
 6. [GetFundamentals](../../services/api/Marketlens.Api/Fundamentals/FundamentalsEndpoints.cs#L92)
@@ -206,10 +207,9 @@ The OpenAPI document is `services/api/openapi/v1.json` (tag `Fundamentals`).
 - No company descriptions (premium at Finnhub), no ETF data, no quarterly figures.
 - Foreign filers (20-F, IFRS) aren't in the universe; their facts aren't under `us-gaap` and would
   show no annual figures.
-- Logos are stored at the end of a refresh run, so a fresh database shows them after the first full
-  pass (about half an hour).
 - Finnhub's free terms limit public display; the public demo stays gated (CONTEXT, open questions).
 
 ## Changelog
 
-- 2026-11-16 — Created (roadmap-and-fundamentals, PR C).
+- 2026-11-16 — Created (roadmap-and-fundamentals, PR C). Logos are stored per stock right after its
+  refresh (first version stored them at the end of a run, so a restart lost them for a day).

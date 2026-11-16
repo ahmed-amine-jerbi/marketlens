@@ -79,6 +79,7 @@ public sealed class FundamentalsTests(MarketlensApiFactory factory) : IDisposabl
         Assert.Equal(4, trends.GetArrayLength());
         Assert.Equal(11, trends[0].GetProperty("strongBuy").GetInt32());
         Assert.Equal(["finnhub", "sec-edgar"], apple.GetProperty("sources").EnumerateArray().Select(source => source.GetString()));
+        Assert.Equal("static2.finnhub.io", new Uri(Listing("stock:AAPL").LogoUrl ?? "https://missing.invalid/").Host);
     }
 
     [Fact]
