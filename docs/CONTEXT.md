@@ -161,6 +161,14 @@ decisions:
   conformal) instead of the models' intervals: on real prices the 80% range held 79% (coins) and
   81% (currencies) out of sample, crypto ranges ~30% narrower. Rejected: a live Coinbase USDT
   ticker (new provider for a 0.1% correction), new models for the centre line (no measurable gain).
+- 2026-11-16 Polish pass: one candle cut-off (`CandleWriter.OldestKeptUtc`) shared by writers and the
+  prune fixes the startup deadlock; a repeated live price is announced at most every 15 s
+  (`MarketData:QuoteBook:HeartbeatInterval`); the forecast endpoint counts closes against the
+  forecaster's minimum; nginx gzips text; SignalR and the fr/de messages load on demand (first
+  download 161 → 141 kB gzipped); per-page titles, keyboard tabs and radio groups, error states.
+  Dependabot ignores majors of postgres, typescript, pandas-stubs and the SignalR test client;
+  minimatch overridden to 11.0.8 under typescript-eslint. Deferred: output caching and scheduler
+  query rewrites (need EXPLAIN on real data), SignalR batching, pair forecasts for fiat in fiat.
 
 ## 11. Extension recipes
 
@@ -192,14 +200,14 @@ decisions:
 
 ## 12. Tech debt
 
-- `minimatch` moderate advisory in dev-only lint tooling (via ESLint / typescript-eslint); waiting
-  on an upstream release.
+- `minimatch` is overridden to 11.0.8 under `@typescript-eslint/typescript-estree` (root
+  `package.json`) until typescript-eslint depends on a patched version; drop the override then.
 - Finnhub, Twelve Data and CoinGecko fixtures follow documented shapes, not recorded responses;
   re-record once the P1 keys exist.
-- Live feeds re-send unchanged prices each second (Binance re-reports them); could be trimmed.
-- Forecasts: an asset whose two-year history is too sparse for the forecaster stays "being
-  prepared" (the API doesn't check the forecaster's minimum count); display currencies convert
-  every forecast day at today's rate.
+- Forecasts: display currencies convert every forecast day at today's rate (the page says so); a
+  pair forecast for fiat shown in another fiat needs its own decision.
+- No output caching on read endpoints; the forecast scheduler groups all daily candles every 10
+  minutes. Measure with `EXPLAIN (ANALYZE, BUFFERS)` on real data before changing either.
 
 ## 13. Open questions
 

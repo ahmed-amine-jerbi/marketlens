@@ -4,6 +4,8 @@ using Marketlens.Api.Data;
 
 using Microsoft.EntityFrameworkCore;
 
+using Npgsql;
+
 namespace Marketlens.Api.MarketData;
 
 /// <summary>One candle in USD, keyed by asset key rather than database id.</summary>
@@ -24,7 +26,9 @@ public sealed record CandleRow(
 /// arrives through <see cref="UpsertAsync"/>. Upserts are idempotent on (asset, interval, bucket) and
 /// merge into an existing bucket: the first open is kept, high and low widen, close and volume take
 /// the newer value. That makes re-running a backfill, or a live bucket meeting a backfilled one, safe.
-/// Once a day, candles older than their interval's retention window are deleted.
+/// Once a day, candles older than their interval's retention window are deleted. Upserts and the
+/// prune share one cut-off (<see cref="OldestKeptUtc"/>), so a writer never inserts a row the prune is
+/// deleting; two statements locking the same rows in opposite orders is how they deadlocked.
 /// </summary>
 public sealed partial class CandleWriter(
     AssetCatalog catalog,
@@ -38,6 +42,10 @@ public sealed partial class CandleWriter(
 
     private static readonly TimeSpan FlushInterval = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan PruneInterval = TimeSpan.FromDays(1);
+
+    /// <summary>Lets the startup backfills finish before the first prune competes with them for rows.</summary>
+    private static readonly TimeSpan FirstPruneDelay = TimeSpan.FromMinutes(5);
+
     private static readonly CandleInterval[] Intervals = [CandleInterval.OneMinute, CandleInterval.OneHour, CandleInterval.OneDay];
 
     private readonly ConcurrentDictionary<(AssetKey Asset, CandleInterval Interval, DateTime BucketStartUtc), CandleRow> pendingBuckets = new();
@@ -53,6 +61,13 @@ public sealed partial class CandleWriter(
         CandleInterval.OneDay => TimeSpan.FromDays(5 * 365 + 1),
         _ => throw new ArgumentOutOfRangeException(nameof(interval), interval, null),
     };
+
+    /// <summary>
+    /// The start of the oldest bucket an interval keeps at <paramref name="nowUtc"/>: rows starting
+    /// earlier are never written and are pruned.
+    /// </summary>
+    public static DateTime OldestKeptUtc(CandleInterval interval, DateTime nowUtc) =>
+        BucketStart(nowUtc - RetentionWindow(interval), interval);
 
     public static DateTime BucketStart(DateTime atUtc, CandleInterval interval) => interval switch
     {
@@ -128,21 +143,52 @@ public sealed partial class CandleWriter(
         return flushed.Count == 0 ? 0 : await UpsertAsync(flushed, cancellationToken);
     }
 
-    /// <returns>The number of rows written; rows for assets not in the catalogue are skipped.</returns>
+    /// <returns>
+    /// The number of rows written; rows for assets not in the catalogue, and rows older than their
+    /// interval's retention window, are skipped.
+    /// </returns>
     public async Task<int> UpsertAsync(IEnumerable<CandleRow> rows, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(rows);
 
         await using var scope = scopeFactory.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<MarketlensDbContext>();
+        var nowUtc = timeProvider.GetUtcNow().UtcDateTime;
+
+        var keptRows = new List<(Guid AssetId, CandleRow Row)>();
+        foreach (var row in rows)
+        {
+            if (row.BucketStartUtc >= OldestKeptUtc(row.Interval, nowUtc) && catalog.TryGet(row.Asset, out var entry))
+            {
+                keptRows.Add((entry.Id, row));
+            }
+        }
+
+        // Sorted by the primary key so concurrent writers lock shared rows in the same order.
+        var orderedRows = keptRows
+            .OrderBy(candidate => candidate.AssetId)
+            .ThenBy(candidate => candidate.Row.Interval)
+            .ThenBy(candidate => candidate.Row.BucketStartUtc);
 
         var writtenCount = 0;
-        foreach (var batch in rows.Where(row => catalog.TryGet(row.Asset, out _)).Chunk(BatchSize))
+        foreach (var batch in orderedRows.Chunk(BatchSize))
         {
-            writtenCount += await UpsertBatchAsync(db, batch, cancellationToken);
+            writtenCount += await RetryOnceOnDeadlockAsync(() => UpsertBatchAsync(db, batch, cancellationToken));
         }
 
         return writtenCount;
+    }
+
+    /// <summary>The newest bucket start per asset among the candles a source wrote for an interval.</summary>
+    public async Task<IReadOnlyDictionary<Guid, DateTime>> NewestBucketStartsAsync(string source, CandleInterval interval, CancellationToken cancellationToken)
+    {
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<MarketlensDbContext>();
+        return await db.PriceCandles
+            .Where(candle => candle.Source == source && candle.Interval == interval)
+            .GroupBy(candle => candle.AssetId)
+            .Select(group => new { AssetId = group.Key, NewestUtc = group.Max(candle => candle.BucketStartUtc) })
+            .ToDictionaryAsync(row => row.AssetId, row => row.NewestUtc, cancellationToken);
     }
 
     /// <summary>Deletes every candle a source wrote (the sample feed, when real stock data takes over).</summary>
@@ -163,10 +209,10 @@ public sealed partial class CandleWriter(
         var deletedCount = 0;
         foreach (var interval in Intervals)
         {
-            var cutoffUtc = nowUtc - RetentionWindow(interval);
-            deletedCount += await db.PriceCandles
+            var cutoffUtc = OldestKeptUtc(interval, nowUtc);
+            deletedCount += await RetryOnceOnDeadlockAsync(() => db.PriceCandles
                 .Where(candle => candle.Interval == interval && candle.BucketStartUtc < cutoffUtc)
-                .ExecuteDeleteAsync(cancellationToken);
+                .ExecuteDeleteAsync(cancellationToken));
         }
 
         return deletedCount;
@@ -174,7 +220,7 @@ public sealed partial class CandleWriter(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var nextPruneUtc = timeProvider.GetUtcNow().UtcDateTime;
+        var nextPruneUtc = timeProvider.GetUtcNow().UtcDateTime + FirstPruneDelay;
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -199,17 +245,32 @@ public sealed partial class CandleWriter(
         }
     }
 
-    private Task<int> UpsertBatchAsync(MarketlensDbContext db, CandleRow[] batch, CancellationToken cancellationToken)
+    // A deadlock victim is rolled back whole, so running the same statement again is safe. Ordered
+    // writes and the shared cut-off make it rare; one retry covers what remains.
+    private async Task<int> RetryOnceOnDeadlockAsync(Func<Task<int>> statement)
     {
-        var assetIds = batch.Select(row => catalog.TryGet(row.Asset, out var entry) ? entry.Id : Guid.Empty).ToArray();
-        var intervals = batch.Select(row => PriceCandleConfiguration.ToColumnValue(row.Interval)).ToArray();
-        var bucketStarts = batch.Select(row => DateTime.SpecifyKind(row.BucketStartUtc, DateTimeKind.Utc)).ToArray();
-        var opens = batch.Select(row => row.OpenUsd).ToArray();
-        var highs = batch.Select(row => row.HighUsd).ToArray();
-        var lows = batch.Select(row => row.LowUsd).ToArray();
-        var closes = batch.Select(row => row.CloseUsd).ToArray();
-        var volumes = batch.Select(row => row.Volume).ToArray();
-        var sources = batch.Select(row => row.Source).ToArray();
+        try
+        {
+            return await statement();
+        }
+        catch (PostgresException error) when (error.SqlState == PostgresErrorCodes.DeadlockDetected)
+        {
+            LogDeadlockRetried(logger);
+            return await statement();
+        }
+    }
+
+    private static Task<int> UpsertBatchAsync(MarketlensDbContext db, (Guid AssetId, CandleRow Row)[] batch, CancellationToken cancellationToken)
+    {
+        var assetIds = batch.Select(candidate => candidate.AssetId).ToArray();
+        var intervals = batch.Select(candidate => PriceCandleConfiguration.ToColumnValue(candidate.Row.Interval)).ToArray();
+        var bucketStarts = batch.Select(candidate => DateTime.SpecifyKind(candidate.Row.BucketStartUtc, DateTimeKind.Utc)).ToArray();
+        var opens = batch.Select(candidate => candidate.Row.OpenUsd).ToArray();
+        var highs = batch.Select(candidate => candidate.Row.HighUsd).ToArray();
+        var lows = batch.Select(candidate => candidate.Row.LowUsd).ToArray();
+        var closes = batch.Select(candidate => candidate.Row.CloseUsd).ToArray();
+        var volumes = batch.Select(candidate => candidate.Row.Volume).ToArray();
+        var sources = batch.Select(candidate => candidate.Row.Source).ToArray();
 
         // Parameterised arrays unnested into rows: one round trip per batch, no string-built SQL.
         return db.Database.ExecuteSqlAsync(
@@ -231,4 +292,7 @@ public sealed partial class CandleWriter(
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Writing live candles failed; retrying on the next pass")]
     private static partial void LogFlushFailed(ILogger logger, Exception error);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "A candle statement was chosen as a deadlock victim; running it once more")]
+    private static partial void LogDeadlockRetried(ILogger logger);
 }

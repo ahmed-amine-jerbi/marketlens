@@ -1,9 +1,9 @@
 import { detectLanguage } from "@marketlens/shared/detectLanguage";
 import type { Language } from "@marketlens/shared/format";
 import { createContext, use, useEffect, useMemo, type ReactNode } from "react";
-import { useTranslation } from "react-i18next";
 
 import { useLocaleSuggestion } from "../api/queries";
+import { switchLanguage } from "../i18n";
 import { useDeviceValue, writeDeviceValue } from "./deviceStorage";
 
 export const themeChoices = ["system", "light", "dark"] as const;
@@ -38,7 +38,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const savedCurrency = useDeviceValue(CURRENCY_KEY);
   const savedTheme = useDeviceValue(THEME_KEY);
   const suggestion = useLocaleSuggestion(savedLanguage === null || savedCurrency === null).data;
-  const { i18n } = useTranslation();
 
   const language = detectLanguage({
     saved: savedLanguage,
@@ -50,8 +49,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     document.documentElement.lang = language;
-    void i18n.changeLanguage(language);
-  }, [language, i18n]);
+    switchLanguage(language).catch((error: unknown) => {
+      // The page stays readable in English; the next change of language tries again.
+      console.warn(`Messages for ${language} could not be loaded`, error);
+    });
+  }, [language]);
 
   useEffect(() => {
     if (theme === "system") {

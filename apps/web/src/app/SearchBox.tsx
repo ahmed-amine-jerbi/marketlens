@@ -19,10 +19,8 @@ export function SearchBox() {
   const [highlighted, setHighlighted] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const deferredQuery = useDeferredValue(query.trim());
-  const results = (useAssets(undefined, deferredQuery || undefined).data ?? []).slice(
-    0,
-    MAX_SUGGESTIONS,
-  );
+  const search = useAssets(undefined, deferredQuery || undefined);
+  const results = (search.data ?? []).slice(0, MAX_SUGGESTIONS);
   const showList = isOpen && deferredQuery.length > 0;
 
   const open = (key: string) => {
@@ -90,7 +88,7 @@ export function SearchBox() {
           role="listbox"
           className="absolute inset-x-0 top-full z-40 mt-1 overflow-hidden rounded-panel border border-divider bg-surface shadow-lg"
         >
-          {results.length === 0 && (
+          {results.length === 0 && !search.isFetching && (
             <li className="px-3 py-2 text-small text-muted">
               {t("search.noResults", { query: deferredQuery })}
             </li>

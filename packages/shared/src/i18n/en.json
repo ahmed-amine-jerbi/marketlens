@@ -83,11 +83,11 @@
   },
   "asset": {
     "tracks": "ETF tracking the {{index}}",
-    "notFound": "Marketlens doesn't track “{{key}}”.",
+    "notFound": "Marketlens doesn’t track “{{key}}”.",
     "noPriceYet": "No price yet. It appears as soon as the data source answers.",
     "chartLabel": "{{name}} price over {{range}}",
     "chartEmpty": "No history for this range yet.",
-    "dailyOnly": "Currencies have one reference rate per day, so short ranges show daily points.",
+    "dailyOnly": "This price has one reference rate per day, so short ranges show daily points.",
     "convert": "Convert {{symbol}}",
     "ranges": {
       "1D": "1 day",
@@ -107,7 +107,7 @@
     "result": "{{amount}} {{from}} is",
     "rate": "1 {{from}} = {{rate}} {{to}}",
     "invalidAmount": "Enter an amount above 0, for example {{example}}.",
-    "unavailable": "There's no price for {{asset}} yet. Try again in a moment.",
+    "unavailable": "There’s no price for {{asset}} yet. Try again in a moment.",
     "sameAsset": "Pick two different assets."
   },
   "dataSources": {
@@ -123,11 +123,12 @@
     "forecasts": "Forecast ranges are computed by Marketlens from these prices."
   },
   "errors": {
-    "loadFailed": "This didn't load. Check your connection and try again.",
+    "loadFailed": "This didn’t load. Check your connection and try again.",
     "retry": "Try again",
-    "pageNotFound": "This page doesn't exist.",
+    "pageNotFound": "This page doesn’t exist.",
     "backHome": "Back to the home page",
-    "unexpected": "Something broke on this page. Reload to try again.",
+    "unexpected": "Something broke on this page. Reload it to try again, or go back home.",
+    "reload": "Reload page",
     "tooManyRequests": "Too many requests from your network. Wait a minute and try again."
   },
   "forecast": {
@@ -141,7 +142,8 @@
     "made": "Forecast made {{date}}.",
     "notAdvice": "Forecasts are estimates, not financial advice.",
     "howItWorks": "How this works",
-    "pending": "The forecast is being prepared and appears within a few minutes.",
+    "pending": "The forecast is being prepared. It usually appears within minutes, or after the next daily close.",
+    "convertedToday": "Shown in {{currency}} at today’s exchange rate for every forecast day.",
     "insufficient": "No forecast for {{name}} yet: forecasts need two years of daily prices.",
     "loadFailed": "The forecast couldn’t be loaded.",
     "legend80": "80% range",

@@ -1,6 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 
+import { PageTitle } from "../app/Layout";
+
 const providers = [
   { name: "Frankfurter", href: "https://frankfurter.dev", text: "dataSources.fiat" },
   { name: "Binance", href: "https://www.binance.com", text: "dataSources.crypto" },
@@ -14,6 +16,7 @@ export function DataSourcesPage() {
 
   return (
     <article className="max-w-2xl">
+      <PageTitle title={t("dataSources.title")} />
       <h1 className="text-heading font-semibold">{t("dataSources.title")}</h1>
       <p className="mt-3 text-body text-muted">{t("dataSources.intro")}</p>
 

@@ -1,7 +1,21 @@
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 
+using Microsoft.Extensions.Options;
+
 namespace Marketlens.Api.MarketData;
+
+public sealed class QuoteBookOptions
+{
+    public const string Section = "MarketData:QuoteBook";
+
+    /// <summary>
+    /// How long an unchanged price (same price and reference) stays unannounced. Feeds re-report the
+    /// same price every second; one announcement per interval keeps "updated N seconds ago" honest
+    /// without fanning every repeat out to clients and candles. Zero announces every tick.
+    /// </summary>
+    public TimeSpan HeartbeatInterval { get; set; } = TimeSpan.FromSeconds(15);
+}
 
 /// <summary>The latest known USD price of an asset.</summary>
 public sealed record UsdQuote(
@@ -16,22 +30,25 @@ public sealed record UsdQuote(
 /// The latest USD price of every asset, in memory. Ingestion writes ticks; quotes, conversions and
 /// alerts read from here, never from providers. USD is the pivot and always prices at exactly 1.
 /// </summary>
-public sealed class QuoteBook(TimeProvider timeProvider)
+public sealed class QuoteBook(TimeProvider timeProvider, IOptions<QuoteBookOptions> options)
 {
     private const string PivotSource = "pivot";
 
     private readonly ConcurrentDictionary<AssetKey, UsdQuote> latestQuotes = new();
+    private readonly ConcurrentDictionary<AssetKey, DateTime> lastAnnouncedUtc = new();
 
     /// <summary>
-    /// Raised after every accepted tick, on the ingesting thread. Handlers must be quick and must not
-    /// throw: they run inside a provider's receive loop.
+    /// Raised after an accepted tick that moved the price or its reference, and at most once per
+    /// <see cref="QuoteBookOptions.HeartbeatInterval"/> for an unchanged one, on the ingesting thread.
+    /// Handlers must be quick and must not throw: they run inside a provider's receive loop.
     /// </summary>
     public event Action<UsdQuote>? QuoteUpdated;
 
     /// <summary>
     /// Records a tick if it is newer than what the book holds. Returns false for an older or
     /// out-of-order tick, which leaves the book unchanged. A tick without a reference price (a single
-    /// trade) keeps the reference the book already has.
+    /// trade) keeps the reference the book already has. An unchanged price is stored with its newer
+    /// time either way; whether it is announced follows <see cref="QuoteUpdated"/>.
     /// </summary>
     public bool Apply(PriceTick tick)
     {
@@ -53,7 +70,7 @@ public sealed class QuoteBook(TimeProvider timeProvider)
             {
                 if (latestQuotes.TryAdd(tick.Asset, incoming))
                 {
-                    QuoteUpdated?.Invoke(incoming);
+                    Announce(incoming);
                     return true;
                 }
 
@@ -66,12 +83,32 @@ public sealed class QuoteBook(TimeProvider timeProvider)
             }
 
             var merged = incoming with { ReferencePriceUsd = incoming.ReferencePriceUsd ?? current.ReferencePriceUsd };
-            if (latestQuotes.TryUpdate(tick.Asset, merged, current))
+            if (!latestQuotes.TryUpdate(tick.Asset, merged, current))
             {
-                QuoteUpdated?.Invoke(merged);
-                return true;
+                continue;
             }
+
+            if (!IsRepeat(merged, current))
+            {
+                Announce(merged);
+            }
+
+            return true;
         }
+    }
+
+    // A repeat reports the same price and reference again; Binance's 24-hour open rolls while the
+    // last price stands still, which changes the change percentage, so it is not a repeat.
+    private bool IsRepeat(UsdQuote merged, UsdQuote current) =>
+        merged.PriceUsd == current.PriceUsd
+        && merged.ReferencePriceUsd == current.ReferencePriceUsd
+        && lastAnnouncedUtc.TryGetValue(merged.Asset, out var announcedUtc)
+        && merged.AsOfUtc - announcedUtc < options.Value.HeartbeatInterval;
+
+    private void Announce(UsdQuote quote)
+    {
+        lastAnnouncedUtc[quote.Asset] = quote.AsOfUtc;
+        QuoteUpdated?.Invoke(quote);
     }
 
     /// <summary>
@@ -87,9 +124,15 @@ public sealed class QuoteBook(TimeProvider timeProvider)
 
         while (latestQuotes.TryGetValue(asset, out var current))
         {
-            if (current.ReferencePriceUsd == referencePriceUsd
-                || latestQuotes.TryUpdate(asset, current with { ReferencePriceUsd = referencePriceUsd }, current))
+            if (current.ReferencePriceUsd == referencePriceUsd)
             {
+                return;
+            }
+
+            if (latestQuotes.TryUpdate(asset, current with { ReferencePriceUsd = referencePriceUsd }, current))
+            {
+                // The next tick carries the new change percentage, so it must not count as a repeat.
+                lastAnnouncedUtc.TryRemove(asset, out _);
                 return;
             }
         }

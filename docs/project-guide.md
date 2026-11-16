@@ -234,7 +234,7 @@ USD prices. Full walkthrough: [features/market-data-ingestion.md](features/marke
 | `AssetUniverse.cs` + `assets.json` | The list of coins, stocks and ETFs to track, checked at startup (a bad entry stops the API with a clear message). Adding an asset is one line in `assets.json`. |
 | `AssetCatalog.cs` | Owns the `assets` table and keeps the active assets in memory. |
 | `PriceTick.cs` | The one shape every adapter emits: asset, USD price, reference price (for the change %), time, source, freshness. |
-| `QuoteBook.cs` | The latest USD price of every asset, **in memory**. Accepts only newer prices and raises `QuoteUpdated`. Everything that reads "current price" reads here, never a provider. |
+| `QuoteBook.cs` | The latest USD price of every asset, **in memory**. Accepts only newer prices and raises `QuoteUpdated` when a price moves (a repeated price at most once every 15 seconds). Everything that reads "current price" reads here, never a provider. |
 | `FrankfurterClient.cs` + `FiatRatesWorker.cs` | Currencies: the list, five years of daily rates once, then the last week every hour. Also the daily **USDT rate**. |
 | `BinanceLiveFeed.cs` | One WebSocket for every coin's live price (Binance quotes in USDT). |
 | `BinanceMarketDataClient.cs` + `BinanceKlinesBackfill.cs` | Crypto history ("klines" = candles): fills gaps at startup and every 6 hours, and rebuilds a missing past. |
@@ -243,7 +243,7 @@ USD prices. Full walkthrough: [features/market-data-ingestion.md](features/marke
 | `TwelveDataClient.cs` | Five years of daily stock and ETF history. |
 | `SampleStockFeed.cs` | Without a Finnhub key: deterministic, clearly labelled sample prices so the app still works. |
 | `CoinGeckoCatalog.cs` | Coin logos, once a day. |
-| `CandleWriter.cs` | Rolls live prices into 1-minute, 1-hour and 1-day candles, writes them in batches, and prunes old ones (3 days / 120 days / 5 years). |
+| `CandleWriter.cs` | Rolls live prices into 1-minute, 1-hour and 1-day candles, writes them in batches, and prunes old ones (3 days / 120 days / 5 years); writers and the prune share one cut-off, so they never fight over the same rows. |
 | `QuoteSnapshots.cs` | Saves the quote book every minute and restores it at startup. |
 | `ProviderBackoff.cs` | Retry delays after a provider error: 1 s doubling to 60 s, with jitter. |
 

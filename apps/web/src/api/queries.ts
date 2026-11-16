@@ -61,6 +61,7 @@ export function useAllAssets() {
         : undefined,
       isPending: results.some((result) => result.isPending),
       isError: results.some((result) => result.isError),
+      error: results.find((result) => result.isError)?.error ?? null,
       refetch: () => Promise.all(results.map((result) => result.refetch())),
     }),
   });

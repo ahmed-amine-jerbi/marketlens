@@ -1,5 +1,6 @@
 using Marketlens.Api.MarketData;
 
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Marketlens.Api.Tests.MarketData;
@@ -9,7 +10,7 @@ public sealed class QuoteBookTests
     private static readonly DateTime Now = new(2026, 11, 8, 15, 0, 0, DateTimeKind.Utc);
     private static readonly AssetKey Bitcoin = AssetKey.Parse("crypto:BTC");
 
-    private readonly QuoteBook quoteBook = new(new FakeTimeProvider(new DateTimeOffset(Now)));
+    private readonly QuoteBook quoteBook = new(new FakeTimeProvider(new DateTimeOffset(Now)), Options.Create(new QuoteBookOptions { HeartbeatInterval = TimeSpan.FromSeconds(15) }));
 
     [Fact]
     public void Apply_stores_the_first_tick_for_an_asset()
@@ -151,6 +152,61 @@ public sealed class QuoteBookTests
         Assert.Equal("finnhub", microsoftQuote.Source);
         Assert.True(quoteBook.TryGet(apple, out _));
         Assert.Equal(497.10m, Assert.Single(announced).PriceUsd);
+    }
+
+    [Fact]
+    public void Apply_stores_an_unchanged_price_silently_within_the_heartbeat()
+    {
+        var announced = new List<UsdQuote>();
+        quoteBook.QuoteUpdated += announced.Add;
+        quoteBook.Apply(Tick(76036.00m, Now));
+
+        var isApplied = quoteBook.Apply(Tick(76036.00m, Now.AddSeconds(1)));
+
+        Assert.True(isApplied);
+        Assert.Single(announced);
+        Assert.True(quoteBook.TryGet(Bitcoin, out var quote));
+        Assert.Equal(Now.AddSeconds(1), quote.AsOfUtc);
+    }
+
+    [Fact]
+    public void Apply_announces_an_unchanged_price_again_once_the_heartbeat_passes()
+    {
+        var announced = new List<UsdQuote>();
+        quoteBook.QuoteUpdated += announced.Add;
+        quoteBook.Apply(Tick(76036.00m, Now));
+        quoteBook.Apply(Tick(76036.00m, Now.AddSeconds(14)));
+
+        quoteBook.Apply(Tick(76036.00m, Now.AddSeconds(15)));
+
+        Assert.Equal([Now, Now.AddSeconds(15)], announced.Select(quote => quote.AsOfUtc));
+    }
+
+    [Fact]
+    public void Apply_announces_a_rolled_reference_even_when_the_price_stands_still()
+    {
+        var announced = new List<UsdQuote>();
+        quoteBook.QuoteUpdated += announced.Add;
+        quoteBook.Apply(Tick(76036.00m, Now));
+
+        quoteBook.Apply(new PriceTick(Bitcoin, 76036.00m, ReferencePriceUsd: 75900.00m, Now.AddSeconds(1), "binance", Freshness.Live));
+
+        Assert.Equal(2, announced.Count);
+        Assert.Equal(75900.00m, announced[^1].ReferencePriceUsd);
+    }
+
+    [Fact]
+    public void Apply_announces_the_first_tick_after_a_new_reference_price()
+    {
+        var announced = new List<UsdQuote>();
+        quoteBook.QuoteUpdated += announced.Add;
+        quoteBook.Apply(Tick(76036.00m, Now));
+        quoteBook.SetReferencePrice(Bitcoin, 75000.00m);
+
+        quoteBook.Apply(new PriceTick(Bitcoin, 76036.00m, ReferencePriceUsd: null, Now.AddSeconds(1), "binance", Freshness.Live));
+
+        Assert.Equal(2, announced.Count);
+        Assert.Equal(75000.00m, announced[^1].ReferencePriceUsd);
     }
 
     [Fact]

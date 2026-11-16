@@ -3,6 +3,7 @@ using Marketlens.Api.MarketData;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace Marketlens.Api.Tests.MarketData;
 
@@ -48,9 +49,8 @@ public sealed class LiveCandlesAndSnapshotsTests(MarketlensApiFactory factory)
         var writer = factory.Services.GetRequiredService<CandleWriter>();
         var expired = CandleWriter.BucketStart(DateTime.UtcNow.AddDays(-10), CandleInterval.OneMinute);
         var kept = CandleWriter.BucketStart(DateTime.UtcNow.AddHours(-4), CandleInterval.OneMinute);
-        await writer.UpsertAsync(
-            [MinuteCandle(Cardano, expired), MinuteCandle(Cardano, kept)],
-            TestContext.Current.CancellationToken);
+        await InsertMinuteCandleAsync(Cardano, expired);
+        await writer.UpsertAsync([MinuteCandle(Cardano, kept)], TestContext.Current.CancellationToken);
 
         await writer.PruneAsync(TestContext.Current.CancellationToken);
 
@@ -65,7 +65,7 @@ public sealed class LiveCandlesAndSnapshotsTests(MarketlensApiFactory factory)
         factory.Services.GetRequiredService<QuoteBook>().Apply(new PriceTick(Polkadot, 4.1234m, 4.0001m, observedAtUtc, "binance", Freshness.Live));
         await factory.Services.GetRequiredService<QuoteSnapshots>().SaveAsync(TestContext.Current.CancellationToken);
 
-        var bookAfterRestart = new QuoteBook(TimeProvider.System);
+        var bookAfterRestart = new QuoteBook(TimeProvider.System, Options.Create(new QuoteBookOptions()));
         var snapshotsAfterRestart = ActivatorUtilities.CreateInstance<QuoteSnapshots>(factory.Services, bookAfterRestart);
         await snapshotsAfterRestart.RestoreAsync(TestContext.Current.CancellationToken);
 
@@ -124,6 +124,26 @@ public sealed class LiveCandlesAndSnapshotsTests(MarketlensApiFactory factory)
         return await db.PriceCandles
             .Where(candle => candle.AssetId == entry.Id && candle.Interval == interval && candle.BucketStartUtc == bucketStartUtc)
             .ToListAsync(TestContext.Current.CancellationToken);
+    }
+
+    // Upserts skip expired rows, so an expired row for the prune to find is inserted directly.
+    private async Task InsertMinuteCandleAsync(AssetKey asset, DateTime bucketStartUtc)
+    {
+        Assert.True(factory.Services.GetRequiredService<AssetCatalog>().TryGet(asset, out var entry));
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<MarketlensDbContext>();
+        db.PriceCandles.Add(new PriceCandle
+        {
+            AssetId = entry.Id,
+            Interval = CandleInterval.OneMinute,
+            BucketStartUtc = bucketStartUtc,
+            OpenUsd = 1m,
+            HighUsd = 1m,
+            LowUsd = 1m,
+            CloseUsd = 1m,
+            Source = "test",
+        });
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     private async Task DeleteCandlesAsync(AssetKey asset, CandleInterval interval)

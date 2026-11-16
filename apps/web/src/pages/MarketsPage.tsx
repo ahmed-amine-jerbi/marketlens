@@ -2,6 +2,7 @@ import { useDeferredValue, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router";
 
+import { PageTitle } from "../app/Layout";
 import type { Asset, AssetClass } from "../api/client";
 import { useLiveQuotes } from "../api/liveQuotes";
 import { useAssets, useQuotes } from "../api/queries";
@@ -68,11 +69,13 @@ function Market({ market }: { market: Market }) {
 
   return (
     <section aria-labelledby="market-title">
+      <PageTitle title={t(page.title)} />
       <h1 id="market-title" className="text-heading font-semibold">
         {t(page.title)}
       </h1>
+      {/* Until the list arrives the count is unknown; an empty line keeps the layout from jumping. */}
       <p className="mt-1 max-w-prose text-small text-muted">
-        {t(page.intro, { count: assets.length })}
+        {isLoading ? "\u00a0" : t(page.intro, { count: assets.length })}
       </p>
 
       <label className="mt-6 block max-w-xs">
