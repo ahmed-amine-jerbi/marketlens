@@ -60,7 +60,7 @@ Full list with walkthroughs: [features/README.md](features/README.md).
 | Market data ingestion | `services/api/Marketlens.Api/MarketData/` | shipped (M2) | [features/market-data-ingestion.md](features/market-data-ingestion.md) |
 | Live quotes | `Quotes/`, `apps/web/src/api/liveQuotes.ts` | web shipped (M3); mobile M7 | [features/live-quotes.md](features/live-quotes.md) |
 | Currency conversion (reference implementation) | `Conversions/`, `apps/web/src/conversions/` | web shipped (M3); mobile M7 | [features/currency-conversion.md](features/currency-conversion.md) |
-| Price history charts | `History/`, `apps/web/src/components/PriceChart.tsx` | web shipped (M3); mobile M7 | [features/price-history-charts.md](features/price-history-charts.md) |
+| Price history charts (with the two-point comparison) | `History/`, `apps/web/src/components/PriceChart.tsx` | web shipped (M3, comparison 2026-11-16); mobile M7 | [features/price-history-charts.md](features/price-history-charts.md) |
 | Localization | `packages/shared/src/i18n`, `apps/web/src/settings/`, `Locale/` | web shipped (M3); GeoLite2 D47 | [features/localization.md](features/localization.md) |
 | Forecasts | `services/forecaster`, `Forecasts/`, `apps/web/src/forecasts/` | web shipped (M4); mobile M7 | [features/forecasts.md](features/forecasts.md) |
 | Accounts and sign-in | `Accounts/` | planned (M5) | `features/accounts-and-sign-in.md` |
@@ -89,6 +89,7 @@ Project-specific:
 | **Price tick** | One normalised price observation from a provider, in USD. |
 | **Candle** | Open/high/low/close for one interval bucket (`1m`, `1h`, `1d`). |
 | **Range** | The chart's time span: `1D`, `1W`, `1M`, `3M`, `1Y`, `5Y`. |
+| **Comparison** | Two past points picked on a chart (its **start point** and **end point**), with both prices, the difference and the % change. Never called a "range". |
 | **Display currency** | The asset prices are shown in (`in=` on the API); default from locale, user-changeable. |
 | **Pivot** | USD. Every asset has a USD price; any pair is the ratio of two USD prices. |
 | **USDT rate** | The USD price of one USDT (Tether, `crypto:USDT`), from Frankfurter's daily rate. Binance quotes coins in USDT; ingestion multiplies by this rate, so crypto prices are in real USD (ADR 0007). |
@@ -206,6 +207,9 @@ decisions:
   re-record once the P1 keys exist.
 - Forecasts: display currencies convert every forecast day at today's rate (the page says so); a
   pair forecast for fiat shown in another fiat needs its own decision.
+- E2E runs against one local stack with 4 Playwright workers. With the default 10 (half of 20
+  cores), a request occasionally stalled for up to 15 s on Docker Desktop (2026-11-16); not
+  reproduced at 2 or 4 workers. Add request timing to the API logs before investigating further.
 - No output caching on read endpoints; the forecast scheduler groups all daily candles every 10
   minutes. Measure with `EXPLAIN (ANALYZE, BUFFERS)` on real data before changing either.
 

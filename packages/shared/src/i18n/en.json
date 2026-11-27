@@ -96,6 +96,17 @@
       "3M": "3 months",
       "1Y": "1 year",
       "5Y": "5 years"
+    },
+    "compare": {
+      "title": "Compare two points",
+      "start": "Start point",
+      "end": "End point",
+      "hint": "Drag across the chart, or use the start and end point sliders, to compare two past prices.",
+      "to": "to",
+      "clear": "Clear comparison",
+      "cleared": "Comparison cleared.",
+      "pointValue": "{{time}}, {{price}} {{currency}}",
+      "summary": "From {{startTime}} to {{endTime}}: {{startPrice}} to {{endPrice}} {{currency}}, {{change}} ({{difference}} {{currency}})."
     }
   },
   "converter": {
@@ -112,7 +123,7 @@
   },
   "dataSources": {
     "title": "Where the data comes from",
-    "intro": "Marketlens collects prices on its own server and shows each one with its source and how current it is. Nothing is computed in your browser.",
+    "intro": "Marketlens collects prices on its own server and shows each one with its source and how current it is. Prices and conversions are computed on Marketlens’s server.",
     "fiat": "Daily reference rates published by central banks, and the daily USDT rate, through Frankfurter.",
     "crypto": "Live prices from Binance public market data, priced in USDT and converted to US dollars at the day’s USDT rate from Frankfurter.",
     "cryptoNames": "Coin logos: data provided by CoinGecko.",

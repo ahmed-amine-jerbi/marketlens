@@ -57,13 +57,28 @@ export function Price({ quote, className = "" }: { quote: Quote; className?: str
 /** The change in percent, with ▲/▼ and a spoken direction, so colour never carries meaning alone. */
 export function Change({ quote, withBasis = false }: { quote: Quote; withBasis?: boolean }) {
   const { t } = useTranslation();
-  const { language } = useSettings();
   if (quote.changePct === null) {
     return null;
   }
 
-  const direction = changeDirection(quote.changePct);
-  const formatted = formatChangePct(quote.changePct, language);
+  return (
+    <span className="whitespace-nowrap">
+      <ChangePct changePct={quote.changePct} />
+      {withBasis && (
+        <span className="ms-2 text-muted">
+          {quote.changeBasis === "rolling-24h" ? t("change.rolling24h") : t("change.previousClose")}
+        </span>
+      )}
+    </span>
+  );
+}
+
+/** A percent change ("1.84" = +1.84 %) in its up/down colour, with ▲/▼ and spoken words. */
+export function ChangePct({ changePct }: { changePct: string }) {
+  const { t } = useTranslation();
+  const { language } = useSettings();
+  const direction = changeDirection(changePct);
+  const formatted = formatChangePct(changePct, language);
   const arrow = direction === "up" ? "▲" : direction === "down" ? "▼" : "";
   const color = direction === "up" ? "text-up" : direction === "down" ? "text-down" : "text-muted";
   const spoken =
@@ -75,11 +90,6 @@ export function Change({ quote, withBasis = false }: { quote: Quote; withBasis?:
         {arrow} {formatted}
       </span>
       <span className="sr-only">{spoken}</span>
-      {withBasis && (
-        <span className="ms-2 text-muted">
-          {quote.changeBasis === "rolling-24h" ? t("change.rolling24h") : t("change.previousClose")}
-        </span>
-      )}
     </span>
   );
 }

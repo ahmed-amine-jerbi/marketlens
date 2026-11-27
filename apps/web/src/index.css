@@ -44,4 +44,10 @@
     outline: 2px solid var(--ml-color-accent);
     outline-offset: 2px;
   }
+
+  /* Recharts gives its drawing layers tabindex="-1", so a press on the chart focuses one and the
+     browser outlines the plot. They are never tab stops; the comparison sliders are. */
+  .recharts-wrapper [tabindex="-1"]:focus {
+    outline: none;
+  }
 }
