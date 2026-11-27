@@ -1,0 +1,15 @@
+{
+  "earningsCalendar": [
+    {
+      "symbol": "AAPL",
+      "date": "2027-01-27",
+      "hour": "",
+      "quarter": 1,
+      "year": 2027,
+      "epsEstimate": 2.9588,
+      "epsActual": null,
+      "revenueEstimate": 159505942061,
+      "revenueActual": null
+    }
+  ]
+}

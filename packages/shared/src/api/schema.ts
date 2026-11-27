@@ -123,6 +123,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/assets/{key}/fundamentals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a stock's key figures, annual revenue and net income, and analyst recommendation counts */
+        get: operations["GetAssetFundamentals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/status": {
         parameters: {
             query?: never;
@@ -161,6 +178,21 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description How many analysts rated the stock strong buy … strong sell in a month, as Finnhub reports it. */
+        AnalystTrendResponse: {
+            /** Format: date-time */
+            periodUtc: string;
+            /** Format: int32 */
+            strongBuy: number | string;
+            /** Format: int32 */
+            buy: number | string;
+            /** Format: int32 */
+            hold: number | string;
+            /** Format: int32 */
+            sell: number | string;
+            /** Format: int32 */
+            strongSell: number | string;
+        };
         /** @enum {unknown} */
         AssetClass: "fiat" | "crypto" | "stock" | "etf";
         AssetDetailResponse: {
@@ -189,6 +221,14 @@ export interface components {
          * @enum {unknown}
          */
         ChangeBasis: "previous-close" | "rolling-24h";
+        CompanyProfileResponse: {
+            industry: null | string;
+            country: null | string;
+            exchange: null | string;
+            /** Format: date-time */
+            ipoDateUtc: null | string;
+            websiteUrl: null | string;
+        };
         ConversionLegResponse: {
             key: components["schemas"]["AssetKey"];
             /** Format: decimal */
@@ -213,6 +253,15 @@ export interface components {
             asOfUtc: string;
             freshness: components["schemas"]["Freshness"];
             legs: components["schemas"]["ConversionLegResponse"][];
+        };
+        /** @description One fiscal year from the company's 10-K, in the display currency; net income can be negative. */
+        FinancialYearResponse: {
+            /** Format: date-time */
+            periodEndUtc: string;
+            /** Format: decimal */
+            revenue: string;
+            /** Format: decimal */
+            netIncome: null | string;
         };
         /** @description One forecast day in the display currency; `t` is midnight UTC, like history points. */
         ForecastPointResponse: {
@@ -247,6 +296,19 @@ export interface components {
          * @enum {unknown}
          */
         Freshness: "live" | "delayed" | "daily";
+        FundamentalsResponse: {
+            status: components["schemas"]["FundamentalsStatus"];
+            in: components["schemas"]["AssetKey"];
+            /** Format: date-time */
+            asOfUtc: null | string;
+            profile: null | components["schemas"]["CompanyProfileResponse"];
+            figures: null | components["schemas"]["KeyFiguresResponse"];
+            financialYears: components["schemas"]["FinancialYearResponse"][];
+            analystTrends: components["schemas"]["AnalystTrendResponse"][];
+            sources: string[];
+        };
+        /** @enum {unknown} */
+        FundamentalsStatus: "available" | "pending" | "no-provider-key" | "not-covered";
         HistoryPoint: {
             /** Format: date-time */
             t: string;
@@ -257,6 +319,27 @@ export interface components {
             interval: string;
             in: components["schemas"]["AssetKey"];
             points: components["schemas"]["HistoryPoint"][];
+        };
+        /** @description Money (market cap, EPS, 52-week range) in the display currency; the rest unitless. */
+        KeyFiguresResponse: {
+            /** Format: decimal */
+            marketCap: null | string;
+            /** Format: decimal */
+            sharesOutstanding: null | string;
+            /** Format: decimal */
+            peRatio: null | string;
+            /** Format: decimal */
+            epsTtm: null | string;
+            /** Format: decimal */
+            dividendYieldPct: null | string;
+            /** Format: decimal */
+            high52Week: null | string;
+            /** Format: decimal */
+            low52Week: null | string;
+            /** Format: decimal */
+            beta: null | string;
+            /** Format: date-time */
+            nextEarningsDateUtc: null | string;
         };
         LocaleSuggestion: {
             language: string;
@@ -655,6 +738,66 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ForecastResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetAssetFundamentals: {
+        parameters: {
+            query?: {
+                in?: string;
+            };
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundamentalsResponse"];
                 };
             };
             /** @description Bad Request */

@@ -146,6 +146,21 @@ export function useForecast(key: string, displayIn: string) {
   });
 }
 
+/** A stock's key figures; they change once a day, and the market cap with the price on each load. */
+export function useFundamentals(key: string, displayIn: string) {
+  return useQuery({
+    queryKey: ["fundamentals", key, displayIn],
+    queryFn: async ({ signal }) =>
+      unwrap(
+        await api.GET("/api/v1/assets/{key}/fundamentals", {
+          params: { path: { key }, query: { in: displayIn } },
+          signal,
+        }),
+      ),
+    staleTime: ONE_HOUR,
+  });
+}
+
 export function useConversion(from: string, to: string, amount: string | null) {
   return useQuery({
     queryKey: ["conversion", from, to, amount],

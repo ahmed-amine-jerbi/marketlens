@@ -5,7 +5,11 @@ namespace Marketlens.Api.MarketData;
 /// <summary>A listed coin. Only Tether has no Binance symbol: it is the quote asset itself.</summary>
 public sealed record CryptoListing(string Symbol, string Name, string? BinanceSymbol, string CoinGeckoId);
 
-public sealed record StockListing(string Symbol, string Name, bool IsStreamed);
+/// <param name="SecCik">
+/// The company's SEC id (10 digits) for its annual revenue and net income; curated, because the SEC's
+/// ticker file spells some tickers differently and has pointed a ticker at a filing-less holding company.
+/// </param>
+public sealed record StockListing(string Symbol, string Name, bool IsStreamed, string? SecCik = null);
 
 public sealed record EtfListing(string Symbol, string Name, string Tracks, bool IsStreamed);
 
@@ -78,6 +82,11 @@ public sealed record AssetUniverse(
         if (Crypto.Any(coin => coin.BinanceSymbol is not null) && Crypto.All(coin => coin.Symbol != BinanceQuoteAsset))
         {
             yield return $"crypto '{BinanceQuoteAsset}' (Tether) must be listed: its daily USD rate converts every Binance price, and its history is stored as its candles.";
+        }
+
+        foreach (var stock in Stocks.Where(stock => stock.SecCik is { } cik && (cik.Length != 10 || !cik.All(char.IsAsciiDigit))))
+        {
+            yield return $"stock '{stock.Symbol}' has secCik '{stock.SecCik}'; SEC ids are 10 digits with leading zeros.";
         }
 
         foreach (var etf in Etfs.Where(etf => string.IsNullOrWhiteSpace(etf.Tracks)))

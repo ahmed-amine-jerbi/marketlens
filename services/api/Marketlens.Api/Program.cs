@@ -1,8 +1,10 @@
+using System.Net;
 using System.Net.Http.Headers;
 
 using Marketlens.Api.Conversions;
 using Marketlens.Api.Data;
 using Marketlens.Api.Forecasts;
+using Marketlens.Api.Fundamentals;
 using Marketlens.Api.History;
 using Marketlens.Api.Http;
 using Marketlens.Api.Locale;
@@ -94,6 +96,33 @@ builder.Services.AddHttpClient<FinnhubClient>((services, http) =>
 builder.Services.AddHostedService<FinnhubLiveFeed>();
 builder.Services.AddHostedService<FinnhubQuotePoller>();
 
+builder.Services.Configure<SecEdgarOptions>(secEdgar =>
+{
+    builder.Configuration.GetSection(SecEdgarOptions.Section).Bind(secEdgar);
+    secEdgar.UserAgent = builder.Configuration["SEC_USER_AGENT"];
+});
+builder.Services.AddHttpClient<SecEdgarClient>((services, http) =>
+    {
+        var secEdgar = services.GetRequiredService<IOptions<SecEdgarOptions>>().Value;
+        http.BaseAddress = secEdgar.BaseUrl;
+        http.Timeout = secEdgar.RequestTimeout;
+        if (secEdgar.HasUserAgent)
+        {
+            // The SEC's required form, "Name contact@example.com", isn't a valid product token, so
+            // it is added as given instead of parsed.
+            http.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", secEdgar.UserAgent);
+        }
+    })
+    .UseSocketsHttpHandler((handler, _) =>
+    {
+        handler.PooledConnectionLifetime = TimeSpan.FromMinutes(15);
+        handler.AutomaticDecompression = DecompressionMethods.All;
+    })
+    .SetHandlerLifetime(Timeout.InfiniteTimeSpan);
+builder.Services.Configure<FundamentalsOptions>(builder.Configuration.GetSection(FundamentalsOptions.Section));
+builder.Services.AddSingleton<FundamentalsRefresher>();
+builder.Services.AddHostedService(services => services.GetRequiredService<FundamentalsRefresher>());
+
 builder.Services.Configure<CoinGeckoOptions>(coinGecko =>
 {
     builder.Configuration.GetSection(CoinGeckoOptions.Section).Bind(coinGecko);
@@ -179,6 +208,7 @@ api.MapQuoteEndpoints();
 api.MapConversionEndpoints();
 api.MapHistoryEndpoints();
 api.MapForecastEndpoints();
+api.MapFundamentalsEndpoints();
 api.MapStatusEndpoints();
 api.MapLocaleEndpoints();
 app.MapHub<QuotesHub>(QuotesHub.Path);
