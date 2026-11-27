@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router";
 
+import { PageTitle } from "../app/Layout";
+import { rovingIndex } from "../components/rovingFocus";
 import { ApiProblemError } from "../api/client";
 import { useLiveQuotes, useQuote } from "../api/liveQuotes";
 import { chartRanges, useAsset, useForecast, type ChartRange } from "../api/queries";
@@ -35,9 +37,22 @@ export function AssetPage() {
   useLiveQuotes(detail.isSuccess ? [key] : [], displayCurrency);
   const quote = useQuote(key, displayCurrency);
 
+  const selectRangeByKey = (event: KeyboardEvent<HTMLDivElement>) => {
+    const nextIndex = rovingIndex(event.key, chartRanges.indexOf(range), chartRanges.length);
+    const next = nextIndex === undefined ? undefined : chartRanges[nextIndex];
+    if (!next) {
+      return;
+    }
+
+    event.preventDefault();
+    setRange(next);
+    document.getElementById(`range-${next}`)?.focus();
+  };
+
   if (detail.error instanceof ApiProblemError && detail.error.status === 404) {
     return (
       <div className="max-w-xl">
+        <PageTitle title={t("asset.notFound", { key })} />
         <h1 className="text-heading font-semibold">{t("asset.notFound", { key })}</h1>
         <Link to="/" className="mt-4 inline-block text-accent underline underline-offset-4">
           {t("errors.backHome")}
@@ -71,6 +86,7 @@ export function AssetPage() {
       <article className="min-w-0">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
+            <PageTitle title={`${asset.name} (${asset.symbol})`} />
             <h1 className="text-heading font-semibold">
               {asset.name} <span className="text-title font-normal text-muted">{asset.symbol}</span>
             </h1>
@@ -103,6 +119,7 @@ export function AssetPage() {
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
           <div
             role="radiogroup"
+            onKeyDown={selectRangeByKey}
             aria-label={t("asset.chartLabel", {
               name: asset.name,
               range: t(`asset.ranges.${range}`),
@@ -114,8 +131,10 @@ export function AssetPage() {
                 key={candidate}
                 type="button"
                 role="radio"
+                id={`range-${candidate}`}
                 aria-checked={candidate === range}
                 aria-label={t(`asset.ranges.${candidate}`)}
+                tabIndex={candidate === range ? 0 : -1}
                 onClick={() => {
                   setRange(candidate);
                 }}

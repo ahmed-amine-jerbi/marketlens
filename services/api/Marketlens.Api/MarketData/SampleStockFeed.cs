@@ -86,29 +86,35 @@ public sealed partial class SampleStockFeed(
 
     private async Task WriteHistoryAsync(IReadOnlyList<CatalogEntry> listings, DateOnly today, CancellationToken cancellationToken)
     {
-        var oldestWanted = today.AddDays(-(int)CandleWriter.RetentionWindow(CandleInterval.OneDay).TotalDays);
-        var closesByListing = listings.ToDictionary(listing => listing.Key, listing => SampleStockFeed.DailyCloses(listing.Key.Symbol, today));
+        var nowUtc = timeProvider.GetUtcNow().UtcDateTime;
+        var closesByListing = listings.Select(listing => (Listing: listing, Closes: DailyCloses(listing.Key.Symbol, today))).ToList();
+
+        // Prices first: they live in memory, so a database failure below still leaves sensible quotes
+        // for the intraday ticks to move from.
+        foreach (var (listing, closes) in closesByListing)
+        {
+            quoteBook.Apply(new PriceTick(listing.Key, closes[^1].CloseUsd, closes[^2].CloseUsd, nowUtc, SourceName, Freshness.Delayed));
+        }
+
+        // The walk is the same on every start, so only days after the newest stored sample candle are new.
+        var newestStoredUtc = await candleWriter.NewestBucketStartsAsync(SourceName, CandleInterval.OneDay, cancellationToken);
+        var oldestKeptUtc = CandleWriter.OldestKeptUtc(CandleInterval.OneDay, nowUtc);
 
         // One batched write for every listing: a few seconds instead of fifty round trips.
         var candles = new List<CandleRow>();
-        foreach (var (asset, closes) in closesByListing)
+        foreach (var (listing, closes) in closesByListing)
         {
+            var firstNewDayUtc = newestStoredUtc.TryGetValue(listing.Id, out var newestUtc) ? newestUtc.AddDays(1) : oldestKeptUtc;
             for (var index = 1; index < closes.Count; index++)
             {
-                if (closes[index].Day >= oldestWanted)
+                if (closes[index].Day.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc) >= firstNewDayUtc)
                 {
-                    candles.Add(ToDailyCandle(asset, closes[index], openUsd: closes[index - 1].CloseUsd));
+                    candles.Add(ToDailyCandle(listing.Key, closes[index], openUsd: closes[index - 1].CloseUsd));
                 }
             }
         }
 
         await candleWriter.UpsertAsync(candles, cancellationToken);
-
-        var nowUtc = timeProvider.GetUtcNow().UtcDateTime;
-        foreach (var (asset, closes) in closesByListing)
-        {
-            quoteBook.Apply(new PriceTick(asset, closes[^1].CloseUsd, closes[^2].CloseUsd, nowUtc, SourceName, Freshness.Delayed));
-        }
     }
 
     private PriceTick NextTick(AssetKey asset, Random random)

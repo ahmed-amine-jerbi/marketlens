@@ -91,7 +91,6 @@ export function Change({ quote, withBasis = false }: { quote: Quote; withBasis?:
 export function Freshness({ quote, assetClass }: { quote: Quote; assetClass: string }) {
   const { t } = useTranslation();
   const { language } = useSettings();
-  const now = useNow();
 
   if (quote.source === "sample") {
     return <span className="text-muted">{t("freshness.sample")}</span>;
@@ -115,7 +114,19 @@ export function Freshness({ quote, assetClass }: { quote: Quote; assetClass: str
       <span className={quote.freshness === "live" ? "font-semibold text-up" : ""}>
         {t(`freshness.${quote.freshness}`)}
       </span>{" "}
-      {t("freshness.updated", { age: formatAge(quote.asOfUtc, now, language) })}
+      <UpdatedAge asOfUtc={quote.asOfUtc} />
     </span>
   );
+}
+
+/**
+ * "Updated 12 sec ago", ticking every second. Its own component so the clock re-renders only the
+ * prices that move, not every row with a daily rate or sample data.
+ */
+function UpdatedAge({ asOfUtc }: { asOfUtc: string }) {
+  const { t } = useTranslation();
+  const { language } = useSettings();
+  const now = useNow();
+
+  return <>{t("freshness.updated", { age: formatAge(asOfUtc, now, language) })}</>;
 }

@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 
 using Marketlens.Api.Forecasts;
 using Marketlens.Api.MarketData;
@@ -16,6 +17,25 @@ public sealed class ForecasterContractTests
 {
     private static readonly string RecordedRequest = ProviderFixtures.Read("forecaster/forecast-request-btc.json");
     private static readonly string RecordedResponse = ProviderFixtures.Read("forecaster/forecast-response-btc.json");
+
+    [Fact]
+    public void The_api_counts_the_same_training_minimum_as_the_forecaster()
+    {
+        var forecasterSource = ProviderFixtures.Read("forecaster/forecast.py");
+
+        var pythonMinimum = Regex.Match(forecasterSource, @"^MIN_TRAINING_CLOSES = (\d+)$", RegexOptions.Multiline);
+
+        Assert.True(pythonMinimum.Success);
+        Assert.Equal(ForecastScheduler.ForecasterMinTrainingCloses, int.Parse(pythonMinimum.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture));
+    }
+
+    [Theory]
+    [InlineData(ForecastFrequency.Daily, 7, 8, 156)]
+    [InlineData(ForecastFrequency.BusinessDays, 5, 8, 140)]
+    public void Required_closes_are_the_training_minimum_plus_the_backtest_windows(ForecastFrequency frequency, int horizonSteps, int backtestWeeks, int expected)
+    {
+        Assert.Equal(expected, ForecastScheduler.RequiredCloseCount(frequency, horizonSteps, backtestWeeks));
+    }
 
     [Fact]
     public async Task The_request_the_client_sends_has_the_shape_of_the_recorded_request()

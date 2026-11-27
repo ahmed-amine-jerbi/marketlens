@@ -59,19 +59,27 @@
    stream doesn't carry as `delayed`). [TwelveDataHistoryBackfill](../../services/api/Marketlens.Api/MarketData/TwelveDataClient.cs#L96)
    fills daily history when a Twelve Data key is set.
 5. **Stocks and ETFs, without a key.** [SampleStockFeed](../../services/api/Marketlens.Api/MarketData/SampleStockFeed.cs#L15)
-   writes five years of deterministic sample history (the same on every start) and moves prices
-   every 5 seconds, all with source `sample`. When a key appears it removes its prices from the
+   writes five years of deterministic sample history (the same on every start, so each start
+   writes only the days after the newest stored sample candle) and moves prices every 5 seconds,
+   all with source `sample`. Its prices are seeded before the history write, so a database
+   failure there still leaves sensible starting prices. When a key appears it removes its prices from the
    quote book ([QuoteBook.RemoveBySource](../../services/api/Marketlens.Api/MarketData/QuoteBook.cs))
    and deletes its candles. Sample prices carry the time they were made up, so left in place they
    would outrank a real price stamped with an earlier last trade (after the close) until the next
    trade; removed, each stock shows its real price within one poll cycle (2 minutes).
-6. **Every accepted price** goes through [QuoteBook.Apply](../../services/api/Marketlens.Api/MarketData/QuoteBook.cs#L36),
-   which keeps only newer prices and raises [QuoteUpdated](../../services/api/Marketlens.Api/MarketData/QuoteBook.cs#L29).
-   [CandleWriter.Record](../../services/api/Marketlens.Api/MarketData/CandleWriter.cs#L92) rolls
+6. **Every accepted price** goes through [QuoteBook.Apply](../../services/api/Marketlens.Api/MarketData/QuoteBook.cs#L53),
+   which keeps only newer prices and raises [QuoteUpdated](../../services/api/Marketlens.Api/MarketData/QuoteBook.cs#L45)
+   when the price or its reference moved, or once per heartbeat (15 s) for a repeated price.
+   [CandleWriter.Record](../../services/api/Marketlens.Api/MarketData/CandleWriter.cs#L107) rolls
    live and delayed prices into 1m/1h/1d buckets and flushes them every 5 seconds; daily fiat
    rates are not rolled into minute candles.
-7. **Housekeeping.** Once a day [CandleWriter.PruneAsync](../../services/api/Marketlens.Api/MarketData/CandleWriter.cs#L157)
+7. **Housekeeping.** Once a day, starting 5 minutes after startup,
+   [CandleWriter.PruneAsync](../../services/api/Marketlens.Api/MarketData/CandleWriter.cs#L203)
    deletes candles past their retention window; every minute `QuoteSnapshots` saves the quote book.
+   Upserts and the prune share one cut-off, [OldestKeptUtc](../../services/api/Marketlens.Api/MarketData/CandleWriter.cs#L69)
+   (the start of the oldest bucket an interval keeps), so a writer never inserts a row the prune
+   is deleting. Upsert batches are sorted by (asset, interval, bucket), and a statement chosen as a
+   deadlock victim (`40P01`) runs once more.
 
 **Alternate flows**
 - A provider is down or answers 429/418: the worker logs, waits with [ProviderBackoff](../../services/api/Marketlens.Api/MarketData/ProviderBackoff.cs#L8)
@@ -147,11 +155,11 @@ flowchart LR
   `TwelveDataClient`, `CoinGeckoClient`. Each emits `PriceTick` or `CandleRow`. Keys travel in
   headers (`X-Finnhub-Token`, `Authorization: apikey …`, `x-cg-demo-api-key`), except Finnhub's
   WebSocket, which only accepts a query parameter; that URI is never logged.
-- **Quote book.** [QuoteBook](../../services/api/Marketlens.Api/MarketData/QuoteBook.cs#L19) is a
+- **Quote book.** [QuoteBook](../../services/api/Marketlens.Api/MarketData/QuoteBook.cs#L33) is a
   lock-free dictionary: an older or out-of-order tick is ignored, a tick without a reference keeps
-  the known one, and [SetReferencePrice](../../services/api/Marketlens.Api/MarketData/QuoteBook.cs#L81)
+  the known one, and [SetReferencePrice](../../services/api/Marketlens.Api/MarketData/QuoteBook.cs#L118)
   updates a previous close whatever the age of the quote that reported it.
-- **Candles.** [CandleWriter.UpsertAsync](../../services/api/Marketlens.Api/MarketData/CandleWriter.cs#L132)
+- **Candles.** [CandleWriter.UpsertAsync](../../services/api/Marketlens.Api/MarketData/CandleWriter.cs#L150)
   sends parameterised arrays through `unnest` in batches of 5000 with `ON CONFLICT` merging: the
   first open is kept, high and low widen, close and volume take the newer value. That is why a
   backfill can be re-run and a live bucket can meet a backfilled one safely.
@@ -265,18 +273,19 @@ All keys are optional; every env var is listed in [.env.example](../../.env.exam
 - Finnhub, Twelve Data and CoinGecko adapters are tested only against documented shapes; re-record
   fixtures once P1 keys exist.
 - One API instance (ADR 0003): the quote book is in memory; scaling out needs a shared cache.
-- Live feeds broadcast unchanged prices too (a mini-ticker each second); harmless, could be trimmed.
 - The USDT correction is daily; moves within a day are not followed (ADR 0007).
 - Coins listed on Binance inside the 5-year window refetch their daily klines on every gap-fill
   run (2 pages each), because the stored history never reaches the window start.
-- At startup the sample stock history write can deadlock with the daily prune
-  (`40P01`, seen 2026-11-09); the write is idempotent and the stored history stays, but it is
-  logged as a warning. Pre-existing; not yet fixed.
 
 ## Changelog
 
 - 2026-11-08 — Created (marketlens-v1, M2).
 - 2026-11-09 — Crypto priced in real USD at the daily USDT rate; Tether listed; self-healing
   klines gap-fill; migration `RepriceCryptoInUsd` (price-and-forecast-accuracy, ADR 0007).
+- 2026-11-16 — Fix: the startup deadlock (`40P01`) between the sample history write and the prune.
+  The prune cut at the time of day while writers wrote midnight buckets, so both touched the oldest
+  day in opposite lock orders. One cut-off (`OldestKeptUtc`) for both, sorted batches, one retry,
+  first prune after 5 minutes; the sample feed writes only new days; repeated prices are announced
+  once per heartbeat (roadmap-and-fundamentals, PR A).
 - 2026-11-09 — Fix: when a Finnhub key is set, sample prices are removed from the quote book too,
   so real quotes from before the close replace them (they had stayed until the next trade).

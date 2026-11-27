@@ -27,6 +27,7 @@ builder.Services.AddHostedService<DatabaseMigrator>();
 builder.Services.AddDataProtection().SetApplicationName("Marketlens").PersistKeysToDbContext<MarketlensDbContext>();
 builder.Services.AddSingleton(AssetUniverse.Load(AssetUniverse.DefaultPath));
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.Configure<QuoteBookOptions>(builder.Configuration.GetSection(QuoteBookOptions.Section));
 builder.Services.AddSingleton<QuoteBook>();
 builder.Services.AddSingleton<AssetCatalog>();
 builder.Services.AddHostedService(services => services.GetRequiredService<AssetCatalog>());

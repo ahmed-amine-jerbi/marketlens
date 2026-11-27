@@ -109,7 +109,7 @@ public static class ForecastEndpoints
         var current = latest is not null && IsCurrent(latest, today) ? latest : null;
         if (current is null)
         {
-            var status = StatusOf(null, await scheduler.HasEnoughHistoryAsync(db, listing.Id, cancellationToken));
+            var status = StatusOf(null, await scheduler.HasEnoughHistoryAsync(db, listing, cancellationToken));
             return TypedResults.Ok(new ForecastResponse(status, displayIn, null, null, options.Value.HorizonDays, [], null));
         }
 

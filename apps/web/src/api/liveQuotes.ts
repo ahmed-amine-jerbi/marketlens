@@ -1,9 +1,5 @@
-import {
-  HubConnectionBuilder,
-  HubConnectionState,
-  LogLevel,
-  type HubConnection,
-} from "@microsoft/signalr";
+import type * as SignalRModule from "@microsoft/signalr";
+import type { HubConnection } from "@microsoft/signalr";
 import { useEffect, useSyncExternalStore } from "react";
 
 import type { Quote } from "./client";
@@ -42,6 +38,9 @@ function subscribeTo(id: QuoteId, listener: Listener): () => void {
   listeners.set(id, forId);
   return () => {
     forId.delete(listener);
+    if (forId.size === 0) {
+      listeners.delete(id);
+    }
   };
 }
 
@@ -54,39 +53,82 @@ export function useQuote(key: string, displayIn: string): Quote | undefined {
   );
 }
 
-// One connection for the whole app; the hub allows a few per visitor.
+// One connection for the whole app; the hub allows a few per visitor. The SignalR client loads with
+// the first live subscription, so it stays out of the first download.
+type SignalR = typeof SignalRModule;
+let signalR: SignalR | undefined;
 let connection: HubConnection | undefined;
 const watchers = new Map<string, number>();
 
-function getConnection(): HubConnection {
+// After automatic reconnection gives up, the connection is restarted on this schedule (the last
+// delay repeats) for as long as something on screen is live.
+const RESTART_DELAYS_MS = [5_000, 15_000, 30_000, 60_000] as const;
+let restartAttempt = 0;
+let restartTimer: ReturnType<typeof setTimeout> | undefined;
+
+// Components mounting together subscribe while the first start is still connecting; they wait for
+// that same start instead of finding the hub "connecting" and giving up.
+let starting: Promise<void> | undefined;
+
+async function getConnection(): Promise<{ hub: HubConnection; signalR: SignalR }> {
+  signalR ??= await import("@microsoft/signalr");
   if (connection) {
-    return connection;
+    return { hub: connection, signalR };
   }
 
-  connection = new HubConnectionBuilder()
+  const hub = new signalR.HubConnectionBuilder()
     .withUrl("/hubs/quotes")
     .withAutomaticReconnect()
-    .configureLogging(LogLevel.Warning)
+    .configureLogging(signalR.LogLevel.Warning)
     .build();
-  connection.on("QuoteUpdated", (quote: Quote) => {
+  hub.on("QuoteUpdated", (quote: Quote) => {
     storeQuotes([quote]);
   });
-  connection.onreconnected(() => {
+  hub.onreconnected(() => {
     void resubscribeAll();
   });
-  return connection;
+  hub.onclose(() => {
+    scheduleRestart();
+  });
+  connection = hub;
+  return { hub, signalR };
 }
 
-async function ensureStarted(hub: HubConnection): Promise<void> {
-  if (hub.state === HubConnectionState.Disconnected) {
-    await hub.start();
+/** One restart chain at a time, whether the hub closed or a start failed. */
+function scheduleRestart(): void {
+  if (watchers.size === 0 || restartTimer !== undefined) {
+    return;
   }
+
+  const delayMs = RESTART_DELAYS_MS[Math.min(restartAttempt, RESTART_DELAYS_MS.length - 1)];
+  restartAttempt += 1;
+  restartTimer = setTimeout(() => {
+    restartTimer = undefined;
+    resubscribeAll()
+      .then(() => {
+        restartAttempt = 0;
+      })
+      .catch((error: unknown) => {
+        console.warn("Live quotes still unavailable", error);
+        scheduleRestart();
+      });
+  }, delayMs);
 }
 
 async function subscribe(keys: readonly string[], displayIn: string): Promise<void> {
-  const hub = getConnection();
-  await ensureStarted(hub);
-  if (hub.state !== HubConnectionState.Connected) {
+  const { hub, signalR: client } = await getConnection();
+  if (hub.state === client.HubConnectionState.Disconnected) {
+    starting ??= hub.start().finally(() => {
+      starting = undefined;
+    });
+  }
+
+  if (starting) {
+    await starting;
+  }
+
+  // Still not connected: an automatic reconnect is under way, and it resubscribes every watcher.
+  if (hub.state !== client.HubConnectionState.Connected) {
     return;
   }
 
@@ -124,8 +166,10 @@ export function useLiveQuotes(keys: readonly string[], displayIn: string): void 
     if (added.length > 0) {
       subscribe(added, displayIn).catch((error: unknown) => {
         // Live updates are an enhancement: REST already shows the prices, so a failed subscribe
-        // only means they stop moving until the connection comes back.
+        // only means they stop moving until the connection comes back. A failed start doesn't
+        // raise onclose, so the restart is scheduled here too.
         console.warn("Live quotes unavailable", error);
+        scheduleRestart();
       });
     }
 
@@ -143,8 +187,13 @@ export function useLiveQuotes(keys: readonly string[], displayIn: string): void 
       });
       const stillWatchedElsewhere = new Set([...watchers.keys()].map((id) => id.split("|")[0]));
       const unwatched = removed.filter((key) => !stillWatchedElsewhere.has(key));
-      if (unwatched.length > 0 && connection?.state === HubConnectionState.Connected) {
-        connection.invoke("Unsubscribe", unwatched).catch((error: unknown) => {
+      const hub = connection;
+      if (
+        unwatched.length > 0 &&
+        hub !== undefined &&
+        hub.state === signalR?.HubConnectionState.Connected
+      ) {
+        hub.invoke("Unsubscribe", unwatched).catch((error: unknown) => {
           console.warn("Unsubscribe failed", error);
         });
       }

@@ -7,16 +7,29 @@ updates:
     groups:
       lint-tooling:
         patterns: ["eslint*", "@eslint/*", "typescript-eslint", "prettier", "globals"]
+    # Majors that need a planned move, not a weekly bump (closed 2026-11-16):
+    # TypeScript 7 is not supported by typescript-eslint yet.
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: nuget
     directory: /services/api
     schedule:
       interval: weekly
+    # The test client follows the server's major version (ASP.NET Core 10).
+    ignore:
+      - dependency-name: "Microsoft.AspNetCore.SignalR.Client"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: uv
     directory: /services/forecaster
     schedule:
       interval: weekly
+    # The stubs follow the pandas major in use.
+    ignore:
+      - dependency-name: "pandas-stubs"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
@@ -27,3 +40,7 @@ updates:
     directory: /
     schedule:
       interval: monthly
+    # A PostgreSQL major needs pg_upgrade or a dump and restore of the data volume.
+    ignore:
+      - dependency-name: "postgres"
+        update-types: ["version-update:semver-major"]

@@ -141,6 +141,21 @@ public sealed class ForecastSchedulerTests(MarketlensApiFactory factory)
         Assert.Equal(JsonValueKind.Null, forecast.GetProperty("trackRecord").ValueKind);
     }
 
+    [Fact]
+    public async Task An_asset_whose_history_reaches_back_but_is_too_sparse_is_insufficient()
+    {
+        var avalanche = AssetKey.Parse("crypto:AVAX");
+        var historyStart = DateTime.UtcNow.Date.AddDays(-730);
+        var everyTenthDay = Enumerable.Range(0, 70)
+            .Select(step => new CandleRow(avalanche, CandleInterval.OneDay, historyStart.AddDays(1 + step * 10), 20m, 20m, 20m, 20m, Volume: null, "test"));
+        await factory.Services.GetRequiredService<CandleWriter>().UpsertAsync(everyTenthDay, TestContext.Current.CancellationToken);
+        using var client = factory.CreateClient();
+
+        var forecast = await GetJsonAsync(client, "/api/v1/assets/crypto:AVAX/forecast");
+
+        Assert.Equal("insufficient-history", forecast.GetProperty("status").GetString());
+    }
+
     [Theory]
     [InlineData("/api/v1/assets/BTC/forecast", HttpStatusCode.BadRequest, "key")]
     [InlineData("/api/v1/assets/stock:AAPL/forecast?in=EUR", HttpStatusCode.BadRequest, "in")]

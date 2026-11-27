@@ -87,7 +87,7 @@
     "noPriceYet": "Noch kein Preis. Er erscheint, sobald die Datenquelle antwortet.",
     "chartLabel": "Preis von {{name}} über {{range}}",
     "chartEmpty": "Für diesen Zeitraum gibt es noch keinen Verlauf.",
-    "dailyOnly": "Währungen haben einen Referenzkurs pro Tag, daher zeigen kurze Zeiträume Tagespunkte.",
+    "dailyOnly": "Dieser Preis hat einen Referenzkurs pro Tag, daher zeigen kurze Zeiträume Tagespunkte.",
     "convert": "{{symbol}} umrechnen",
     "ranges": {
       "1D": "1 Tag",
@@ -127,7 +127,8 @@
     "retry": "Erneut versuchen",
     "pageNotFound": "Diese Seite gibt es nicht.",
     "backHome": "Zur Startseite",
-    "unexpected": "Auf dieser Seite ist ein Fehler aufgetreten. Laden Sie sie neu.",
+    "unexpected": "Auf dieser Seite ist ein Fehler aufgetreten. Laden Sie sie neu oder kehren Sie zur Startseite zurück.",
+    "reload": "Seite neu laden",
     "tooManyRequests": "Zu viele Anfragen aus Ihrem Netzwerk. Warten Sie eine Minute und versuchen Sie es erneut."
   },
   "forecast": {
@@ -141,7 +142,8 @@
     "made": "Prognose vom {{date}}.",
     "notAdvice": "Prognosen sind Schätzungen, keine Finanzberatung.",
     "howItWorks": "So funktioniert es",
-    "pending": "Die Prognose wird vorbereitet und erscheint in wenigen Minuten.",
+    "pending": "Die Prognose wird vorbereitet. Sie erscheint meist innerhalb weniger Minuten oder nach dem nächsten Tagesschluss.",
+    "convertedToday": "In {{currency}} zum heutigen Wechselkurs für jeden Prognosetag angezeigt.",
     "insufficient": "Noch keine Prognose für {{name}}: Dafür sind zwei Jahre tägliche Kurse nötig.",
     "loadFailed": "Die Prognose konnte nicht geladen werden.",
     "legend80": "80-%-Spanne",

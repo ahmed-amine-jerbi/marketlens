@@ -4,6 +4,7 @@ using Marketlens.Api.Data;
 using Marketlens.Api.MarketData;
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace Marketlens.Api.Tests.MarketData;
 
@@ -64,7 +65,7 @@ public sealed class UsdtRatesTests(MarketlensApiFactory factory)
     [Fact]
     public void A_live_tick_is_held_back_until_a_usdt_rate_is_known()
     {
-        var quoteBook = new QuoteBook(TimeProvider.System);
+        var quoteBook = new QuoteBook(TimeProvider.System, Options.Create(new QuoteBookOptions()));
         var usdtRates = new UsdtRates(quoteBook, factory.Services.GetRequiredService<AssetCatalog>(), factory.Services.GetRequiredService<IServiceScopeFactory>());
         var usdtTick = new PriceTick(Bitcoin, 75000m, null, DateTime.UtcNow, "binance", Freshness.Live);
 
