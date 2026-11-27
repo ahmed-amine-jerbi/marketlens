@@ -10,6 +10,7 @@
     "currencies": "Currencies",
     "crypto": "Crypto",
     "stocks": "Stocks and ETFs",
+    "news": "News",
     "convert": "Convert",
     "dataSources": "Data sources"
   },
@@ -127,7 +128,7 @@
     "fiat": "Daily reference rates published by central banks, and the daily USDT rate, through Frankfurter.",
     "crypto": "Live prices from Binance public market data, priced in USDT and converted to US dollars at the day’s USDT rate from Frankfurter.",
     "cryptoNames": "Coin logos: data provided by CoinGecko.",
-    "stocks": "US stock and ETF prices, stock key figures and analyst counts from Finnhub, history from Twelve Data. Without API keys the app shows clearly marked sample prices instead, and no key figures.",
+    "stocks": "US stock and ETF prices, stock key figures, analyst counts and market news from Finnhub, history from Twelve Data. Without API keys the app shows clearly marked sample prices instead, and no key figures or news.",
     "conversions": "A conversion divides the US-dollar prices of the two assets, so it is only as current as the slower of the two.",
     "disclaimerTitle": "Not financial advice",
     "disclaimer": "Marketlens shows prices for information only. They can be delayed or wrong, and nothing here is a recommendation to buy or sell anything.",
@@ -222,5 +223,24 @@
     "sources": "Figures and analyst counts from Finnhub. Updated {{date}}. Information only, not financial advice.",
     "sourcesWithFilings": "Figures and analyst counts from Finnhub; revenue and net income from SEC EDGAR filings. Updated {{date}}. Information only, not financial advice.",
     "currencyNote": "Money is shown in {{currency}} at today’s exchange rate."
+  },
+  "news": {
+    "title": "News",
+    "intro": "The latest headlines about stock markets and crypto, from Finnhub. Each one links to its publisher.",
+    "markets": "Markets",
+    "crypto": "Crypto",
+    "tabsLabel": "News topics",
+    "latestTitle": "Latest news",
+    "more": "More news",
+    "companyTitle": "News about {{name}}",
+    "companyIntro": "The last week’s headlines that mention {{name}}.",
+    "empty": "No news right now. Check back later.",
+    "companyEmpty": "No news about {{name}} in the last week.",
+    "unavailable": "News couldn’t be fetched from Finnhub just now. Try again in a few minutes.",
+    "noProviderKey": "News needs a Finnhub API key on this Marketlens server.",
+    "loadFailed": "The news couldn’t be loaded.",
+    "meta": "{{source}} · {{age}}",
+    "opensPublisher": "(opens {{source}} in a new tab)",
+    "notice": "Headlines and summaries belong to their publishers. English only. News is information, not financial advice."
   }
 }

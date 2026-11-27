@@ -9,6 +9,8 @@ export type Conversion = components["schemas"]["ConversionResponse"];
 export type History = components["schemas"]["HistoryResponse"];
 export type Forecast = components["schemas"]["ForecastResponse"];
 export type Fundamentals = components["schemas"]["FundamentalsResponse"];
+export type News = components["schemas"]["NewsResponse"];
+export type NewsArticle = components["schemas"]["NewsArticleResponse"];
 export type Status = components["schemas"]["StatusResponse"];
 export type LocaleSuggestion = components["schemas"]["LocaleSuggestion"];
 

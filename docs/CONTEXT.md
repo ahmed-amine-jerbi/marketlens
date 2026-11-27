@@ -22,7 +22,8 @@ One user type: the *everyday, curious* visitor, signed out by default, optionall
 2. Convert an amount between any two assets (0.25 BTC → TND).
 3. Open an asset, change the chart range, see the forecast range and how often past forecasts held.
 4. Sign in to sync the watchlist across devices and set a price alert that arrives as a push.
-5. Read news next to an asset.
+5. Read the latest stock-market and crypto news on the home page and the News page, and a
+   company's news on its stock page.
 
 ## 3. Stack
 
@@ -69,7 +70,7 @@ Full list with walkthroughs: [features/README.md](features/README.md).
 | Key figures (stock fundamentals) | `Fundamentals/`, `MarketData/SecEdgarClient.cs`, `apps/web/src/fundamentals/` | web shipped (2026-11-16); mobile M7 | [features/key-figures.md](features/key-figures.md) |
 | Watchlists | `apps/web/src/watchlist/` (device); `Watchlists/` (M5) | web shipped on the device (M3); sync M5 | [features/watchlists.md](features/watchlists.md) |
 | Price alerts | `Alerts/` | planned (M6) | `features/price-alerts.md` |
-| Market news | `News/` | planned (M6) | `features/market-news.md` |
+| Market news | `News/`, `apps/web/src/news/` | web shipped (2026-11-16); mobile M7 | [features/market-news.md](features/market-news.md) |
 
 ## 6. Conventions
 
@@ -108,6 +109,7 @@ Project-specific:
 | **Backtest** | Rolling re-forecast of past data to measure a model before showing it. |
 | **Track record** | How often the real price stayed inside the 80% band and the typical miss next to the baseline's, from the backtest or, once Marketlens's own forecasts have been checked across the whole 8-week window, from live results. |
 | **Key figures** | A stock's market cap, ratios, dates and profile, its annual revenue and net income, and analyst counts ("Key figures" in the UI; `Fundamentals` in the API and code). |
+| **News** | Headlines from Finnhub linking to their publishers: "Markets" (Finnhub's general category), "Crypto", and a company's news on its stock page. |
 | **Fiscal year** | A company's reporting year as filed in its 10-K, labelled by the year it ends ("FY 2026"). |
 | **Analyst counts** | How many analysts rated a stock strong buy … strong sell in a month, as reported to Finnhub; never a Marketlens recommendation. |
 | **Forecast range** | The 80% and 95% bands drawn on the chart after the last close; "forecast range" in UI copy, never "prediction". Sized by calibration on the asset's own past moves, scaled to its current volatility. |
@@ -170,6 +172,10 @@ decisions:
   conformal) instead of the models' intervals: on real prices the 80% range held 79% (coins) and
   81% (currencies) out of sample, crypto ranges ~30% narrower. Rejected: a live Coinbase USDT
   ticker (new provider for a 0.1% correction), new models for the centre line (no measurable gain).
+- 2026-11-16 Market news from Finnhub's free news (asked for mid-run): home "Latest news", a News
+  page with Markets / Crypto tabs, company news on stock pages; 15-minute in-memory cache, nothing
+  stored; publisher pictures shown, so the CSP allows `https:` images (loaded lazily, no referrer).
+  See [features/market-news.md](features/market-news.md).
 - 2026-11-16 Key figures for stocks from Finnhub's free fundamentals and SEC EDGAR filings
   (see [features/key-figures.md](features/key-figures.md)): market cap is
   Finnhub's moved with the live price (its share counts were wrong for BRK.B); one SEC revenue tag

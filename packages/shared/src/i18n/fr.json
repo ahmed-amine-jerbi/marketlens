@@ -10,6 +10,7 @@
     "currencies": "Devises",
     "crypto": "Crypto",
     "stocks": "Actions et ETF",
+    "news": "Actualités",
     "convert": "Convertir",
     "dataSources": "Sources des données"
   },
@@ -127,7 +128,7 @@
     "fiat": "Taux de référence quotidiens publiés par les banques centrales, et taux USDT quotidien, via Frankfurter.",
     "crypto": "Prix en direct des données de marché publiques de Binance, cotés en USDT et convertis en dollars américains au taux USDT du jour fourni par Frankfurter.",
     "cryptoNames": "Logos des cryptos : données fournies par CoinGecko.",
-    "stocks": "Cours des actions et ETF américains, chiffres clés et recommandations d’analystes : Finnhub ; historique : Twelve Data. Sans clés API, l’application affiche des cours d’exemple clairement signalés, et aucun chiffre clé.",
+    "stocks": "Cours des actions et ETF américains, chiffres clés, recommandations d’analystes et actualités : Finnhub ; historique : Twelve Data. Sans clés API, l’application affiche des cours d’exemple clairement signalés, sans chiffres clés ni actualités.",
     "conversions": "Une conversion divise les prix en dollars des deux actifs : elle n’est pas plus récente que le plus lent des deux.",
     "disclaimerTitle": "Pas un conseil financier",
     "disclaimer": "Marketlens affiche des prix à titre d’information. Ils peuvent être en retard ou inexacts, et rien ici n’est une recommandation d’achat ou de vente.",
@@ -222,5 +223,24 @@
     "sources": "Chiffres et recommandations : Finnhub. Mis à jour le {{date}}. Information uniquement, pas un conseil financier.",
     "sourcesWithFilings": "Chiffres et recommandations : Finnhub ; chiffre d’affaires et résultat net : dépôts SEC EDGAR. Mis à jour le {{date}}. Information uniquement, pas un conseil financier.",
     "currencyNote": "Les montants sont affichés en {{currency}} au taux de change du jour."
+  },
+  "news": {
+    "title": "Actualités",
+    "intro": "Les derniers titres sur les marchés boursiers et les cryptomonnaies, via Finnhub. Chacun renvoie vers son éditeur.",
+    "markets": "Marchés",
+    "crypto": "Crypto",
+    "tabsLabel": "Thèmes des actualités",
+    "latestTitle": "Dernières actualités",
+    "more": "Plus d’actualités",
+    "companyTitle": "Actualités sur {{name}}",
+    "companyIntro": "Les titres de la semaine dernière qui mentionnent {{name}}.",
+    "empty": "Aucune actualité pour le moment. Revenez plus tard.",
+    "companyEmpty": "Aucune actualité sur {{name}} la semaine dernière.",
+    "unavailable": "Les actualités n’ont pas pu être récupérées auprès de Finnhub. Réessayez dans quelques minutes.",
+    "noProviderKey": "Les actualités nécessitent une clé API Finnhub sur ce serveur Marketlens.",
+    "loadFailed": "Les actualités n’ont pas pu être chargées.",
+    "meta": "{{source}} · {{age}}",
+    "opensPublisher": "(ouvre {{source}} dans un nouvel onglet)",
+    "notice": "Les titres et résumés appartiennent à leurs éditeurs. En anglais uniquement. Les actualités sont une information, pas un conseil financier."
   }
 }

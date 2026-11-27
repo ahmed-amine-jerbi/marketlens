@@ -1,14 +1,16 @@
 import { useState, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router";
 
 import type { AssetClass, Quote } from "../api/client";
 import { useLiveQuotes } from "../api/liveQuotes";
-import { useAllAssets, useAssets, useQuotes } from "../api/queries";
+import { useAllAssets, useAssets, useNews, useQuotes } from "../api/queries";
 import { PageTitle } from "../app/Layout";
 import { AssetTable } from "../components/AssetTable";
 import { rovingIndex } from "../components/rovingFocus";
 import { LoadError, TableSkeleton } from "../components/States";
 import { ConverterPanel } from "../conversions/ConverterPanel";
+import { NewsList } from "../news/NewsList";
 import { useSettings } from "../settings/Settings";
 import { useWatchlist } from "../watchlist/useWatchlist";
 
@@ -30,6 +32,7 @@ export function HomePage() {
         <h1 className="text-heading font-semibold">{t("home.title")}</h1>
         <Watchlist />
         <BiggestMoves />
+        <LatestNews />
       </div>
       <aside className="min-w-0">
         <ConverterPanel />
@@ -189,6 +192,30 @@ function BiggestMoves() {
         {quotes.isSuccess && ranked.length > 0 && (
           <AssetTable assets={ranked} caption={t("home.moves")} />
         )}
+      </div>
+    </section>
+  );
+}
+
+const LATEST_NEWS_SHOWN = 5;
+
+/** The newest stock-market and crypto headlines, merged, with a way to the News page (D27). */
+function LatestNews() {
+  const { t } = useTranslation();
+  const news = useNews("all", LATEST_NEWS_SHOWN);
+
+  return (
+    <section aria-labelledby="latest-news-title">
+      <div className="flex items-baseline justify-between gap-4">
+        <h2 id="latest-news-title" className="text-title font-semibold">
+          {t("news.latestTitle")}
+        </h2>
+        <Link to="/news" className="text-small text-accent underline underline-offset-4">
+          {t("news.more")}
+        </Link>
+      </div>
+      <div className="mt-3 rounded-panel bg-surface px-4">
+        <NewsList news={news} emptyText={t("news.empty")} rows={LATEST_NEWS_SHOWN} />
       </div>
     </section>
   );
